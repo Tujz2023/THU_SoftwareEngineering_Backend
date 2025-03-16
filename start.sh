@@ -1,15 +1,15 @@
 #!/bin/sh
-
-# 运行数据库迁移
+python3 manage.py makemigrations board
 python3 manage.py migrate
 
-# 启动 uWSGI
-uwsgi --socket mysite.sock \
-    --module=mysite.wsgi:application \
-    --env DJANGO_SETTINGS_MODULE=baackend.settings \
+# TODO Start: [Student] Run with uWSGI instead
+python3 manage.py runserver 80
+uwsgi --module=mysite.wsgi:application \
+    --env DJANGO_SETTINGS_MODULE=mysite.settings \
     --master \
+    --http=0.0.0.0:0 \
     --processes=5 \
     --harakiri=20 \
     --max-requests=5000 \
-    --vacuum \
-    --chmod-socket=666
+    --vacuum
+# TODO End: [Student] Run with uWSGI instead
