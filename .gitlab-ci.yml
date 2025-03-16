@@ -33,7 +33,7 @@ unit-test:
     # TODO Start: [Student] Migrate and run tests
     - python manage.py makemigrations ims
     - python manage.py migrate
-    - bash start.sh
+    - bash test.sh
     # TODO End: [Student] Migrate and run tests
   after_script:
     - SUFFIX=$RANDOM
