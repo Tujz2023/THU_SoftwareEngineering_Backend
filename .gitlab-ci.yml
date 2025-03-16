@@ -49,7 +49,6 @@ unit-test:
 deploy:
   stage: deploy
   script:
-    - export  API SERVER=https://deployer.spring25b.secoder.net/api
     - deployer dyno replace $CI_PROJECT_NAME "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
   # TODO Start: [Student] Set as only main
   only:
