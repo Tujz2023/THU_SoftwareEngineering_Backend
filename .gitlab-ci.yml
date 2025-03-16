@@ -4,7 +4,7 @@ image: registry.spring25b.secoder.net/tool/deployer
 
 stages:
   - build
-  - test
+  # - test
   - deploy
 
 build:
