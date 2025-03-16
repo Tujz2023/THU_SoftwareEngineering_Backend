@@ -2,7 +2,8 @@ import json
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from ims.models import Conversation, User, Message, Request, Invitation
+from ims.models import User
+# from ims.models import Conversation, User, Message, Request, Invitation
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp

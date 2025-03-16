@@ -31,9 +31,9 @@ unit-test:
     # TODO End: [Student] Install dependencies
   script:
     # TODO Start: [Student] Migrate and run tests
+    - python manage.py makemigrations ims
     - python manage.py migrate
-    - chmod +x test.sh
-    - ./test.sh
+    - bash start.sh
     # TODO End: [Student] Migrate and run tests
   after_script:
     - SUFFIX=$RANDOM
