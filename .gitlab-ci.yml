@@ -48,9 +48,8 @@ unit-test:
 deploy:
   stage: deploy
   script:
-    - export DEPLOY_ENV=$GITLAB_USER_LOGIN
     - export  API SERVER=https://deployer.spring25b.secoder.net/api
-    - deployer dyno replace backend $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG gitlab-ci-token $REGISTRY_PWD
+    - deployer dyno replace $CI_PROJECT_NAME "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
   # TODO Start: [Student] Set as only main
   only:
     - dev
