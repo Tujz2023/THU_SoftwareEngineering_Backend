@@ -35,15 +35,15 @@ unit-test:
     - chmod +x test.sh
     - ./test.sh
     # TODO End: [Student] Migrate and run tests
-  after_script:
-    - SUFFIX=$RANDOM
-    # TODO Start: [Student] Secoder URL
-    - curl "http://api.spring25b.secoder.net/static/sonar-scanner.tar.gz" -s -o "/tmp/sonar-$SUFFIX.tar.gz"
-    - tar -xf "/tmp/sonar-$SUFFIX.tar.gz"  -C /opt
-    - sed -i 's/sonarqube.secoder.net/sonarqube.spring25b.secoder.net/g' /opt/sonar-scanner/conf/sonar-scanner.properties
-    - sed -i 's/api.secoder.net/api.spring25b.secoder.net/g' /opt/sonar-scanner/bin/sonar-scanner
-    # TODO End: [Student] Secoder URL
-    - /opt/sonar-scanner/bin/sonar-scanner
+  # after_script:
+  #   - SUFFIX=$RANDOM
+  #   # TODO Start: [Student] Secoder URL
+  #   - curl "http://api.spring25b.secoder.net/static/sonar-scanner.tar.gz" -s -o "/tmp/sonar-$SUFFIX.tar.gz"
+  #   - tar -xf "/tmp/sonar-$SUFFIX.tar.gz"  -C /opt
+  #   - sed -i 's/sonarqube.secoder.net/sonarqube.spring25b.secoder.net/g' /opt/sonar-scanner/conf/sonar-scanner.properties
+  #   - sed -i 's/api.secoder.net/api.spring25b.secoder.net/g' /opt/sonar-scanner/bin/sonar-scanner
+  #   # TODO End: [Student] Secoder URL
+  #   - /opt/sonar-scanner/bin/sonar-scanner
 
 deploy:
   stage: deploy
