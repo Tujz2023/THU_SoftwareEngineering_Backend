@@ -6,7 +6,7 @@ python3 manage.py migrate
 # 启动 uWSGI
 uwsgi --socket mysite.sock \
     --module=mysite.wsgi:application \
-    --env DJANGO_SETTINGS_MODULE=mysite.settings \
+    --env DJANGO_SETTINGS_MODULE=baackend.settings \
     --master \
     --processes=5 \
     --harakiri=20 \
