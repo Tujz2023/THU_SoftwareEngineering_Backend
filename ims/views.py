@@ -18,7 +18,7 @@ def login(req: HttpRequest):
     body = json.loads(req.body.decode("utf-8"))
     
     email = require(body, "email", "string", err_msg="Missing or error type of [email]")
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+    if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
         return request_failed(1, "Invalid email", 400)
     password = require(body, "password", "string", err_msg="Missing or error type of [password]")
     user = User.objects.filter(email=email).first()
@@ -48,7 +48,7 @@ def register(req: HttpRequest):
     name = require(body, "name", "string", err_msg="Missing or error type of [name]")
     if len(name) > 20 or name == "":
         return request_failed(-3, "Name too long", 400)
-    if not re.match(r"[a-zA-Z0-9_]{1,20}", password):
+    if not re.match(r"^[a-zA-Z0-9_]{1,20}$", password):
         return request_failed(-4, "Password illegal", 400)
     if user is not None:
         if user.deleted:
@@ -70,10 +70,10 @@ def delete(req: HttpRequest):
         return BAD_METHOD    
     jwt_token = req.headers.get("Authorization")
     if jwt_token == None or jwt_token == "":
-        return request_failed(2, "Invalid or expired JWT", status_code=401)
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     payload = check_jwt_token(jwt_token)
     if payload is None:
-        return request_failed(2, "Invalid or expired JWT", status_code=401) 
+        return request_failed(-2, "Invalid or expired JWT", status_code=401) 
     user = User.objects.filter(email=payload["email"]).first()
     user.deleted = True
     user.save()

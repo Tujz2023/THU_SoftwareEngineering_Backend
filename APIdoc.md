@@ -87,7 +87,7 @@ POST请求
 
 ```json
 {
-    "name": "user_name",
+    "email": "user@example.com",
     "password": "********"
 }
 ```
