@@ -5,7 +5,6 @@ from utils.utils_request import return_field
 from utils.utils_require import MAX_CHAR_LENGTH
 
 class User(models.Model):
-    # 打算取消id，改用email作为主键
     email = models.EmailField(primary_key=True, unique=True)
     name = models.CharField(max_length=MAX_CHAR_LENGTH)
     password = models.CharField(max_length=MAX_CHAR_LENGTH) # 加密后的密码
@@ -41,8 +40,9 @@ class User(models.Model):
 class Conversation(models.Model):
     # types: 0-private, 1-group
     type = models.BooleanField(default=False)
-    id = models.BigAutoField(primary_key=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     members = models.ManyToManyField(User)
+    ConvName = models.CharField(max_length=MAX_CHAR_LENGTH, default="群组")
     created_time = models.FloatField(default=utils_time.get_timestamp)
     avatar = models.ImageField(upload_to='avatar/conversation/')
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="creator")
@@ -64,8 +64,21 @@ class Conversation(models.Model):
     def __str__(self) -> str:
         return f"conversation {self.id}"
 
+class Interface(models.Model):
+    id = models.BigAutoField(primary_key=True, unique=True)
+    conv = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    notification = models.BooleanField(default=True)
+    unreads = models.IntegerField(default=0)
+
+    class Meta:
+        indexes = [models.Index(fields=["id"])]
+
+    def __str__(self) -> str:
+        return f"interface {self.id} of user {self.user.email} in conversation {self.conv.id}"
+
 class Message(models.Model):
-    id = models.BigAutoField(primary_key=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
     content = models.TextField() # 是否加密传输
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
