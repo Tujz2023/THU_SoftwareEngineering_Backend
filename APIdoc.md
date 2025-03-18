@@ -217,7 +217,8 @@ PUT请求：
 
 ```json
 {
-    "query": "targetId"
+    "query_email": "target_email",
+    "quey_name": "target_name"
 }
 ```
 
@@ -230,15 +231,12 @@ PUT请求：
 {
     "code": 0,
     "info": "success",
-    "id": "userId",
     "name": "userName",
     "email": "userEmail",
     "avatar_path": "userAvatarUrl",
-    "deleted": false // 是否已被注销
 }
 ```
 
-- id: 用户ID
 - name: 用户昵称
 - email: 用户邮箱
 - avatar_path: 用户头像URL
@@ -253,8 +251,9 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"登录已失效"。 
-- 若查找的用户id错误或不存在或者已经被注销，状态码404，错误码-1，错误信息"所查找用户不存在"。  
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若无查询条件，状态码400，错误码-7，错误信息"Missing or error type of [query_email] or [query_name]"。 
+- 若查找的用户不存在或者已经被注销，状态码404，错误码-1，错误信息"User not found or deleted"。  
 
 #### 好友申请/add_friend
 
@@ -264,15 +263,16 @@ PUT请求：
 
 ```json
 {
-    "userId": "userId",
-    "searchId": "targetId",
-    "message":"Hello"
+    "user_email": "user_email",
+    "search_email": "target_email",
+    "message":"Hello",
+    "created_at": "2025-03-13T14:30:00Z"
 }
 ```
-
-- userId: 发送好友申请的用户ID
-- searchId: 要查找的用户的ID
+- user_email: 发送好友申请的用户邮箱
+- search_email: 要查找的用户的邮箱
 - message: 申请消息
+- created_at: 申请时间
 
 响应：  
 请求成功时，设置状态码为200OK，返回申请成功的消息，成功响应格式为:
@@ -294,11 +294,9 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"登录已失效"。 
-- 若查找的用户id错误或不存在或者已经被注销，状态码404，错误码-1，错误信息"所查找用户不存在"。  
-- 若用户已是好友，状态码403，错误码-4，错误信息"您已是该用户的好友"。  
-- 若用户已发送过好友申请，状态码403，错误码-5，错误信息"您已发送过好友申请"。  
-- 若用户试图添加自己为好友，状态码403，错误码-6，错误信息"您不能添加自己为好友"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
+- 若查找的用户email错误或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found"。  
+- 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。  
 
 #### 好友申请列表/friend_requests
 
@@ -308,11 +306,11 @@ PUT请求：
 
 ```json
 {
-    "userId": "userId"
+    "user_email": "user_email"
 }
 ```
 
-- userId: 查看好友申请的用户ID
+- user_email: 查看好友申请列表的用户邮箱
 
 响应：  
 请求成功时，设置状态码为200OK，返回好友申请列表，成功响应格式为:
@@ -323,21 +321,19 @@ PUT请求：
     "info": "success",
     "requests": [
         {
-            "user_id": "UserId",
+            "user_email": "user_email",
             "user_name": "UserName",
             "avatar_path": "AvatarUrl",
             "message": "申请消息",
-            "deleted": false, // 是否已被注销
-            "timestamp": "2025-03-13T14:30:00Z" ,// 申请时间
+            "created_at": "2025-03-13T14:30:00Z", // 申请时间
             "status": 0 // 0: 等待处理，1: 已同意，2: 已拒绝
         },
         {
-            "user_id": "UserId",
+            "user_email": "user_email",
             "user_name": "UserName",
             "avatar_path": "AvatarUrl",
             "message": "申请消息",
-            "deleted": false, // 是否已被注销
-            "timestamp": "2025-03-13T14:30:00Z" ,// 申请时间
+            "created_at": "2025-03-13T14:30:00Z", // 申请时间
             "status": 1 // 0: 等待处理，1: 已同意，2: 已拒绝
         }
     ]
@@ -345,11 +341,11 @@ PUT请求：
 ```
 
 - requests: 好友申请列表，包含申请者的ID、昵称、头像URL、申请消息、状态。
-- user_id: 申请者ID
+- user_email: 申请者邮箱
 - user_name: 申请者昵称
 - avatar_path: 申请者头像URL
 - message: 申请消息
-- deleted: 该用户是否已被注销
+- created_at: 申请时间
 - timestamp: 申请时间
 - status: 申请状态，0: 等待处理，1: 已同意，2: 已拒绝
 
@@ -362,7 +358,7 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"登录已失效"。        
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。        
 
 #### 处理好友申请/friend_requests/{requestId}
 
@@ -372,10 +368,12 @@ PUT请求：
 
 ```json
 {
-    "send_user_id": "userId",
-    "accept_user_id": "targetId"
+    "send_user_email": "user_email",
+    "receiver_user_email": "target_email"
 }
 ```
+- send_user_email: 发送好友申请的用户邮箱
+- receiver_user_email: 接收好友申请的用户邮箱
 
 响应：  
 请求成功时，设置状态码为200OK，返回拒绝好友申请成功的消息，成功响应格式为:
@@ -397,15 +395,15 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"登录已失效"。
-- 若处理的用户已经被注销，状态码404，错误码-1，错误信息"用户已注销"。    
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若处理的用户已经被注销，状态码404，错误码-1，错误信息"User deleted"。    
 
 DELETE请求：
 
 ```json
 {
-    "send_user_id": "userId",
-    "reject_user_id": "targetId"
+    "send_user_email": "user_email",
+    "receiver_user_email": "target_email"
 }
 ```
 
@@ -429,7 +427,7 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"登录已失效"。
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若处理的用户已经被注销，状态码404，错误码-1，错误信息"用户已注销"。
 
 #### 分组管理/groups
