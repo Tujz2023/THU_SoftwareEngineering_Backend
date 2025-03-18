@@ -2,9 +2,10 @@ from django.urls import path, include
 import ims.views as views
 
 urlpatterns = [
-    path('login', views.login),
-    # 登录注册
-    # 用户
+    path('account/login', views.login),
+    path('account/reg', views.register),
+    path('account/delete', views.delete),
+    path('account/info', views.account_info),
     path('search_user', views.search_users),
     path('add_friend', views.add_friend),
     path('friend_requests', views.get_friend_requests),
