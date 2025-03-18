@@ -89,8 +89,12 @@ class Request(models.Model):
     id = models.BigAutoField(primary_key=True)
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="request_sender")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="request_receiver")
+    message = models.CharField(
+        max_length=255,
+        blank=True,
+    )
     time = models.FloatField(default=utils_time.get_timestamp)
-    status = models.IntegerField(default=False) # 0-waiting, 1-rejected, 2-accepted
+    status = models.IntegerField(default=0) # 0-waiting, 1-rejected, 2-accepted
 
     class Meta:
         indexes = [models.Index(fields=["id"])]
@@ -103,7 +107,7 @@ class Invitation(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="invitation_receiver")
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     time = models.FloatField(default=utils_time.get_timestamp)
-    status = models.IntegerField(default=False) # 0-waiting, 1-rejected, 2-accepted
+    status = models.IntegerField(default=0) # 0-waiting, 1-rejected, 2-accepted
 
     class Meta:
         indexes = [models.Index(fields=["id"])]
