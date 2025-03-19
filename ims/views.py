@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.shortcuts import render
 
 from ims.models import User
-from ims.models import Conversation, User, Message, Request, Invitation
+from ims.models import Conversation, User, Message, Request, Invitation, Group
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -282,17 +282,175 @@ def friend_request_handle(req: HttpRequest):
         return request_success({"message": "已拒绝该好友申请"})
     
 
-# @CheckRequire
-# def groups(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def groups(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
     
-#     if req.method not in ["GET", "POST"]:
-#         return BAD_METHOD
-#     # 获取群组列表
-#     if req.method == "GET":
-#         user_email = req.GET.get("user_email", "")
+    if req.method not in ["GET", "POST"]:
+        return BAD_METHOD
+    # 获取群组列表
+    if req.method == "GET":
+        user_email = req.GET.get("user_email", "")
+        groups = Group.objects.filter(owner__email=user_email)
+        group_list = [
+            {
+                "id": group.id,
+                "name": group.name,
+            }
+            for group in groups
+        ]
+        return request_success({"groups": group_list})
+
+    # 创建群组
+    elif req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
+        name = require(body, "name", "string", err_msg="Missing or error type of [name]")
+
+        existing_group = Group.objects.filter(owner__email=user_email, name=name).first()
+        if existing_group:
+            return request_failed(-1, "Group already exists", 400)
+        
+        new_group = Group.objects.create(owner_id=user_email, name=name)
+        new_group.save()
+
+        return request_success({"message": "分组创建成功"})
+
+@CheckRequire
+def manage_groups(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    if req.method not in ["GET", "PUT", "DELETE"]:
+        return BAD_METHOD
+    
+    # 查看分组详情
+    if req.method == "GET":
+        group_id = req.GET.get("group_id", "")
+        group = Group.objects.filter(id=int(group_id)).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
+        
+        group_members = [
+            {
+                "email": member.email,
+                "name": member.name,
+                "avatar_path": member.avatar.url if member.avatar else "",
+            }
+            for member in group.members.all()
+        ]
+
+        result = {
+            "id": group.id,
+            "name": group.name,
+            "members": group_members,
+        }
+
+        return request_success({"group": result})
+    
+    # 修改分组名称
+    elif req.method == "PUT":
+        body = json.loads(req.body.decode("utf-8"))
+        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+        new_name = require(body, "new_name", "string", err_msg="Missing or error type of [new_name]")
+
+        exsiting_group = Group.objects.filter(owner__email=user_email, name=new_name).first()
+        if exsiting_group and exsiting_group.id != int(group_id):
+            return request_failed(-1, "Name already exists", 409)
+
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
+        
+        group.name = new_name
+        group.save()
+
+        return request_success({"message": "修改分组名称成功"})
+    
+    # 删除分组
+    elif req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
+        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
+        
+        group.delete()
+
+
+@CheckRequire
+def manage_group_members(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    if req.method not in ["GET", "POST", "DELETE"]:
+        return BAD_METHOD
+    
+    # 查看分组成员列表
+    if req.method == "GET":
+        group_id = req.GET.get("group_id", "")
+        group = Group.objects.filter(id=int(group_id)).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
+        
+        group_members = [
+            {
+                "email": member.email,
+                "name": member.name,
+                "avatar_path": member.avatar.url if member.avatar else "",
+            }
+            for member in group.members.all()
+        ]
+
+        return request_success({"members": group_members})
+    
+    # 添加分组成员
+    elif req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+        member_email = require(body, "member_email", "string", err_msg="Missing or error type of [member_email]")
+
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
+        
+        member = User.objects.filter(email=member_email).first()
+        if not member:
+            return request_failed(-1, "Member not found", 404)
+        
+        if group.members.filter(email=member_email).exists():
+            return request_failed(-3, "Member already in group", 400)
+        
+        group.members.add(member)
+
+        return request_success({"message": "添加分组成员成功"})
+    
+    # 删除分组成员
+    elif req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+        member_email = require(body, "member_email", "string", err_msg="Missing or error type of [member_email]")
+
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
+        
+        member = User.objects.filter(email=member_email).first()
+        if not member:
+            return request_failed(-1, "Member not found", 404)
+        
+        if not group.members.filter(email=member_email).exists():
+            return request_failed(-3, "Member not in group", 400)
+        
+        group.members.remove(member)
+
 
 
 @CheckRequire
@@ -327,8 +485,92 @@ def get_friends_list(req: HttpRequest):
 
     return request_success({"friends": friends_list})
 
-# @CheckRequire
-# def manage_friends(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def manage_friends(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    if req.method not in ["GET", "PUT", "DELETE"]:
+        return BAD_METHOD
+    
+    # 查看好友详情
+    if req.method == "GET":
+        user_email = req.GET.get("user_email", "")
+        friend_email = req.GET.get("friend_email", "")
+
+        user = User.objects.filter(email=user_email).first()
+        if not user:
+            return request_failed(-1, "User not found", 404)
+        
+        friend = User.objects.filter(email=friend_email).first()
+        if not friend:
+            return request_failed(-1, "Friend not found", 404)
+        
+        friend_groups = Group.objects.filter(members=friend)
+        
+        return_data = {
+            "email": friend.email,
+            "name": friend.name,
+            "avatar_path": friend.avatar.url if friend.avatar else "",
+            "deleted": friend.deleted,
+            "groups": [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                }
+                for group in friend_groups
+            ]
+        }
+
+        return request_success(return_data)
+    
+    # 删除好友
+    elif req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
+        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
+        friend_email = require(body, "friend_email", "string", err_msg="Missing or error type of [friend_email]")
+
+        user = User.objects.filter(email=user_email).first()
+        if not user:
+            return request_failed(-1, "User not found", 404)
+        
+        friend = User.objects.filter(email=friend_email).first()
+        if not friend:
+            return request_failed(-1, "Friend not found", 404)
+        
+        Conversation.objects.filter(type=0).filter(members=user).filter(members=friend).delete()
+
+        # 删除好友之间的请求
+        Request.objects.filter(sender=user, receiver=friend).delete()
+        Request.objects.filter(sender=friend, receiver=user).delete()
+
+        return request_success({"message": "删除好友成功"})
+    
+    # 好友分组操作
+    elif req.method == "PUT":
+        body = json.loads(req.body.decode("utf-8"))
+        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
+        friend_email = require(body, "friend_email", "string", err_msg="Missing or error type of [friend_email]")
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+
+        user = User.objects.filter(email=user_email).first()
+        if not user:
+            return request_failed(-1, "User not found", 404)
+        
+        friend = User.objects.filter(email=friend_email).first()
+        if not friend:
+            return request_failed(-1, "Friend not found", 404)
+        
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
+        
+        if group.members.filter(email=friend_email).exists():
+            return request_failed(-3, "Friend already in group", 400)
+        
+        group.members.add(friend)
+
+        return request_success({"message": "添加好友到分组成功"})
+        
+
