@@ -126,3 +126,26 @@ class Invitation(models.Model):
         indexes = [models.Index(fields=["id"])]
     def __str__(self) -> str:
         return f"invitation from {self.sender.email} to {self.receiver.email} for conversation {self.conversation.id}"
+    
+class Group(models.Model):
+    id = models.BigAutoField(primary_key=True, unique=True)
+    name = models.CharField(max_length=MAX_CHAR_LENGTH)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="owned_groups")
+    members = models.ManyToManyField(User, related_name="friend_groups", blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["id", "name"]),
+            models.Index(fields=["owner"]),
+        ]
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "owner": self.owner.email,
+            "members": [member.email for member in self.members.all()],
+        }
+
+    def __str__(self):
+        return f"Group {self.name} (ID: {self.id}) - Owner: {self.owner.email}"

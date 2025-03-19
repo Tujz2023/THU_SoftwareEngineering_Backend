@@ -10,9 +10,9 @@ urlpatterns = [
     path('add_friend', views.add_friend),
     path('friend_requests', views.get_friend_requests),
     path('friend_requests/<request_id>', views.friend_request_handle),
-    # path('groups', views.groups),
-    # path('groups/<group_id>', views.manage_groups),
-    # path('groups/<group_id>/members', views.manage_group_members),
+    path('groups', views.groups),
+    path('groups/<group_id>', views.manage_groups),
+    path('groups/<group_id>/members', views.manage_group_members),
     path('friends',views.get_friends_list),
-    # path('frieds/<friend_id>',views.manage_friends),
+    path('frieds/<friend_email>',views.manage_friends),
 ]
