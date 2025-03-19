@@ -112,7 +112,7 @@ def account_info(req: HttpRequest):
         else:
             user.name = newname
         newemail = require(body, "email", "string", err_msg="Missing or error type of [email]")
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", newemail):
             invalid_email = True
         else:
             user.email = newemail
