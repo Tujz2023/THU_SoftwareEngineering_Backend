@@ -222,7 +222,8 @@ PUT请求：
 }
 ```
 
-- query: 要查找的用户的ID
+- query_email: 要查找的用户的邮箱
+- query_name: 要查找的用户的昵称
 
 响应：  
 请求成功时，设置状态码为200OK，返回查找用户的基本信息，成功响应格式为:
@@ -296,7 +297,8 @@ PUT请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
 - 若查找的用户email错误或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found"。  
-- 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。  
+- 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。
+- 若已经向对方发送过好友请求但是对方并未处理，状态码403，错误码-5，错误信息"Friend request already sent"。  
 
 #### 好友申请列表/friend_requests
 
@@ -382,7 +384,7 @@ PUT请求：
 {
     "code": 0,
     "info": "success",
-    "message": "已接受好友申请"
+    "message": "已接受该好友申请"
 }
 ```
 
@@ -440,11 +442,9 @@ GET请求：
 
 ```json
 {
-    "userId": "userId"
+    "user_email": "user_email"
 }
-```
-
-- userId: 查看分组名单的用户ID
+- user_email: 查看分组名单的用户邮箱
 
 响应：  
 请求成功时，设置状态码为200OK，返回分组名单，成功响应格式为:
@@ -487,12 +487,12 @@ POST请求：
 
 ```json
 {
-    "userId": "userId",
+    "user_email": "user_email",
     "name": "groupName"
 }
 ```
 
-- userId: 创建分组的用户ID
+- user_email: 创建分组的用户邮箱
 - name: 分组名称
 
 响应：  
@@ -528,12 +528,12 @@ GET请求：
 
 ```json
 {
-    "userId": "userId",
+    "user_email": "user_email",
     "groupId": "groupId"
 }
 ```
 
-- userId: 查看分组详情的用户ID
+- user_email: 查看分组详情的用户邮箱
 - groupId: 查看分组详情的分组ID
 
 响应：  
@@ -572,7 +572,7 @@ PUT请求：
 
 ```json
 {
-    "userId": "userId",
+    "user_email": "user_email",
     "groupId": "groupId",
     "name": "newGroupName"
 }
@@ -608,7 +608,7 @@ DELETE请求：
 
 ```json
 {
-    "userId": "userId",
+    "user_email": "user_email",
     "groupId": "groupId"
 }
 ```
@@ -661,12 +661,12 @@ GET请求：
     "info": "success",
     "members": [
         {
-            "id": "userId",
+            "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
         },  
         {
-            "id": "userId",
+            "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
         }
@@ -674,8 +674,8 @@ GET请求：
 }
 ```
 
-- members: 分组成员列表，包含成员的ID、昵称、头像URL。
-- id: 成员ID
+- members: 分组成员列表，包含成员的email、昵称、头像URL。
+- email: 成员邮箱
 - name: 成员昵称
 - avatar_path: 成员头像URL
 
@@ -697,15 +697,15 @@ POST请求：
 
 ```json
 {
-    "userId": "userId",
+    "user_email": "user_email",
     "groupId": "groupId",
-    "memberId": "targetId"
+    "member_email": "target_email"
 }
 ```
 
-- userId: 添加分组成员的用户ID
+- user_email: 添加分组成员的用户邮箱
 - groupId: 添加分组成员的分组ID
-- memberId: 要添加的成员ID
+- member_email: 要添加的成员邮箱
 
 响应：  
 请求成功时，设置状态码为200OK，返回添加分组成员成功的消息，成功响应格式为:
@@ -738,15 +738,15 @@ DELETE请求：
 
 ```json
 {
-    "userId": "userId",
+    "user_email": "user_email",
     "groupId": "groupId",
-    "memberId": "targetId"
+    "member_email": "target_email"
 }
 ```
 
-- userId: 删除分组成员的用户ID
+- user_email: 删除分组成员的用户邮箱
 - groupId: 删除分组成员的分组ID
-- memberId: 要删除的成员ID
+- member_email: 要删除的成员邮箱
 
 响应：  
 请求成功时，设置状态码为200OK，返回删除分组成员成功的消息，成功响应格式为:
@@ -781,11 +781,11 @@ DELETE请求：
 
 ```json
 {
-    "userId": "userId"
+    "user_email": "user_email"
 }
 ```
 
-- userId: 查看好友列表的用户ID
+- user_email: 查看好友列表的用户ID
 
 响应：  
 请求成功时，设置状态码为200OK，返回好友列表，成功响应格式为:
@@ -796,12 +796,12 @@ DELETE请求：
     "info": "success",
     "friends": [
         {
-            "id": "userId",
+            "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
         },  
         {
-            "id": "userId",
+            "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
         }
@@ -809,8 +809,8 @@ DELETE请求：
 }
 ```
 
-- friends: 好友列表，包含好友的ID、昵称、头像URL。
-- id: 好友ID
+- friends: 好友列表，包含好友的email、昵称、头像URL。
+- email: 好友邮箱
 - name: 好友昵称
 - avatar_path: 好友头像URL
 
@@ -826,7 +826,7 @@ DELETE请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"登录已失效"。 
 - 若用户不存在，状态码404，错误码-1，错误信息"用户不存在"。 
 
-#### 好友操作/friends/{friendId}
+#### 好友操作/friends/{friend_email}
 
 该API用于操作指定好友，包括查看好友详情、删除好友，为好友分组操作。
 
@@ -836,13 +836,13 @@ GET请求：
 
 ```json
 {
-    "userId": "userId",
-    "friendId": "friendId"
+    "user_email": "user_email",
+    "friend_email": "friend_email"
 }
 ```
 
-- userId: 查看好友详情的用户ID
-- friendId: 查看好友详情的好友ID
+- user_email: 查看好友详情的用户email
+- friend_email: 查看好友详情的好友邮箱
 
 响应：  
 请求成功时，设置状态码为200OK，返回好友详情，成功响应格式为:
@@ -851,20 +851,18 @@ GET请求：
 {
     "code": 0,
     "info": "success",
-    "id": "friendId",
+    "email": "friend_email",
     "name": "userName",
     "avatar_path": "AvatarUrl",
-    "email": "userEmail",
     "phone": "userPhone",
     "deleted": false,
     "groups": "groupname"
 }
 ```
 
-- id: 好友ID
+- email: 好友邮箱
 - name: 好友昵称
 - avatar_path: 好友头像URL
-- email: 好友邮箱
 - phone: 好友手机号
 - `deleted`: 好友是否已注销
 - `groups`: 好友所在分组名称
@@ -888,13 +886,13 @@ DELETE请求：
 
 ```json
 {
-    "userId": "userId",
-    "friendId": "friendId"
+    "user_email": "user_email",
+    "friend_email": "friend_email"
 }
 ```
 
-- userId: 删除好友的用户ID
-- friendId: 要删除的好友ID
+- user_email: 删除好友的用户email
+- friend_email: 要删除的好友email
 
 响应：  
 请求成功时，设置状态码为200OK，返回删除好友成功的消息，成功响应格式为:
@@ -926,14 +924,14 @@ PUT请求：
 
 ```json
 {
-    "userId": "userId",
-    "friendId": "friendId",
+    "user_email": "user_email",
+    "friend_email": "friend_email",
     "groupId": "groupId"
 }
 ```
 
-- userId: 操作好友的用户ID
-- friendId: 操作的好友ID
+- user_email: 操作好友的用户email
+- friend_email: 操作的好友email
 - groupId: 要移动到的分组ID
 
 响应：  
@@ -1041,17 +1039,17 @@ POST请求：
 
 ```json
 {
-    "userId": "userId",
-    "members": ["userId1", "userId2"],
+    "user_email": "user_email",
+    "members": ["user_email1", "user_email2"],
     "is_chat_group": true,
-    "host_id": "userId",
+    "host_id": "user_email",
     "name": "conversationName",
     "avatar_path": "AvatarUrl",
     "timestamp": "2025-03-13T14:30:00Z"
 }
 ```
 
-- userId: 创建会话的用户ID
+- user_email: 创建会话的用户ID
 - members: 会话参与人ID列表
 - is_chat_group: 是否为群聊
 - host_id: 会话创建者ID，默认为创建者id
@@ -1091,9 +1089,9 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "sender_id": "userId",
+    "sender_id": "user_email",
     "is_chat_group": true,
-    "receiver_id": ["userId1", "userId2"],
+    "receiver_id": ["user_email1", "user_email2"],
     "content": "messageContent",
     "timestamp": "2025-03-13T14:30:00Z"
 }
@@ -1140,7 +1138,7 @@ POST请求：
 {
     "conversationId": "conversationId",
     "message_id": "messageId",
-    "sender_id": "userId",
+    "sender_id": "user_email",
     "content": "messageContent",
     "timestamp": "2025-03-13T14:30:00Z"
 }
@@ -1209,12 +1207,12 @@ GET请求：
     "notice_able": true,
     "members": [
         {
-            "id": "userId",
+            "id": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl"
         },
         {
-            "id": "userId",
+            "id": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl"
         }
@@ -1270,7 +1268,7 @@ GET请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId"
+    "user_email": "user_email"
 }
 ```
 
@@ -1527,13 +1525,13 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId",
+    "user_email": "user_email",
     "admin_id": "adminId"
 }
 ```
 
 - conversationId: 设置群组管理员的会话ID
-- userId: 设置管理员的用户ID
+- user_email: 设置管理员的用户ID
 - admin_id: 需要添加的管理员ID
 
 响应：
@@ -1569,13 +1567,13 @@ DELETE请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId",
+    "user_email": "user_email",
     "admin_id": "adminId"
 }
 ```
 
 - conversationId: 解除群组管理员的会话ID
-- userId: 解除管理员的用户ID
+- user_email: 解除管理员的用户ID
 - admin_id: 需要解除的管理员ID
 
 响应：
@@ -1611,7 +1609,7 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "sender_id": "userId",
+    "sender_id": "user_email",
     "content": "content",
     "timestamp": "2025-03-13T14:30:00Z"
 }
@@ -1654,13 +1652,13 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId",
+    "user_email": "user_email",
     "new_owner_id": "newOwnerId"
 }
 ```
 
 - conversationId: 群主转让的会话ID
-- userId: 转让群主的用户ID
+- user_email: 转让群主的用户ID
 - new_owner_id: 转让群主的新群主ID
 
 响应：
@@ -1696,13 +1694,13 @@ DELETE请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId",
-    "member_id": "memberId"
+    "user_email": "user_email",
+    "member_id": "member_email"
 }
 ```
 
 - conversationId: 移除群成员的会话ID
-- userId: 移除群成员的用户ID
+- user_email: 移除群成员的用户ID
 - member_id: 要移除的群成员ID
 
 响应：
@@ -1739,12 +1737,12 @@ DELETE请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId"
+    "user_email": "user_email"
 }
 ```
 
 - conversationId: 退出群组的会话ID
-- userId: 退出群组的用户ID
+- user_email: 退出群组的用户ID
 
 响应：
 请求成功时，设置状态码为200OK，返回退出群组成功的消息，成功响应格式为:
@@ -1778,14 +1776,14 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId",
-    "member_id": ["memberId1", "memberId2"],
+    "user_email": "user_email",
+    "member_id": ["member_email1", "member_email2"],
     "timestamp": "2025-03-13T14:30:00Z"
 }
 ```
 
 - conversationId: 群组邀请的会话ID
-- userId: 群组邀请的用户ID
+- user_email: 群组邀请的用户ID
 - member_id: 群组邀请的成员ID列表
 - timestamp: 群组邀请时间
 
@@ -1821,18 +1819,18 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId",
+    "user_email": "user_email",
     "invite_id": "inviteId",
-    "memberid": "memberId",
+    "member_email": "member_email",
     "timestamp": "2025-03-13T14:30:00Z",
     "status": "true"
 }
 ```
 
 - conversationId: 处理群组邀请的会话ID
-- userId: 处理群组邀请的用户ID
+- user_email: 处理群组邀请的用户ID
 - invite_id: 发出邀请的成员ID
-- memberid: 处理群组邀请的成员ID
+- member_email: 处理群组邀请的成员ID
 - timestamp: 发出邀请的时间
 - status: 处理结果，true为接受邀请，false为拒绝邀请
 
@@ -1868,16 +1866,16 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "userId": "userId",
+    "user_email": "user_email",
     "name": "groupName",
     "avatar_path": "AvatarUrl",
     "admins": ["adminId1", "adminId2"],
-    "members": ["memberId1", "memberId2"]
+    "members": ["member_email1", "member_email2"]
 }
 ```
 
 - conversationId: 更新群信息的会话ID
-- userId: 更新群信息的用户ID
+- user_email: 更新群信息的用户ID
 - name: 群名称  
 - avatar_path: 群头像URL
 - admins: 群管理员ID列表
