@@ -39,7 +39,7 @@ class User(models.Model):
 
 class Conversation(models.Model):
     # types: 0-private, 1-group
-    type = models.BooleanField(default=False)
+    type = models.IntegerField(default=0)
     id = models.BigAutoField(primary_key=True, unique=True)
     members = models.ManyToManyField(User)
     ConvName = models.CharField(max_length=MAX_CHAR_LENGTH, default="群组")

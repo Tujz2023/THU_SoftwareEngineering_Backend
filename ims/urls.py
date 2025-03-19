@@ -13,6 +13,6 @@ urlpatterns = [
     # path('groups', views.groups),
     # path('groups/<group_id>', views.manage_groups),
     # path('groups/<group_id>/members', views.manage_group_members),
-    # path('friends',views.get_friends_list),
+    path('friends',views.get_friends_list),
     # path('frieds/<friend_id>',views.manage_friends),
 ]
