@@ -136,15 +136,13 @@ def search_users(req: HttpRequest):
     if req.method != "GET":
         return BAD_METHOD
     
-    body = json.loads(req.body.decode("utf-8"))
-    
-    query_email = require(body, "query_email", "string", err_msg="Missing or error type of [query_email]")
-    query_name = require(body, "query_name", "string", err_msg="Missing or error type of [query_name]")
+    query_email = req.GET.get("query_email", "")
+    query_name = req.GET.get("query_name", "")
 
-    query_filter = Q()
-    if query_email:
+    query_filter = Q() # 构造查询条件
+    if query_email.strip():  # 确保不为空
         query_filter &= Q(email__icontains=query_email)
-    if query_name:
+    if query_name.strip():
         query_filter &= Q(name__icontains=query_name)
 
     else:
@@ -182,10 +180,7 @@ def add_friend(req: HttpRequest):
     search_email = require(body, "search_email", "string", err_msg="Missing or error type of [search_email]")
     message = require(body, "message", "string", err_msg="Missing or error type of [message]")
 
-    # 验证当前用户是否存在
     user_cur = User.objects.filter(email=user_email).first()
-    if not user_cur:
-        return request_failed(1, "User not found", 404)
 
     # 验证被添加用户是否存在
     user = User.objects.filter(email=search_email).first()
@@ -194,12 +189,19 @@ def add_friend(req: HttpRequest):
     
     # 验证当前用户是否已经是好友（通过会话conversation来判断是否为好友）
     existing_conversation = Conversation.objects.filter(
-        type=0,  # 私聊类型
-        members=user
-    ).filter(members=user_cur).exists()  # 确保两个用户都在会话中
+        type=0  # 私聊类型
+    ).filter(members=user).filter(members=user_cur).exists()
 
     if existing_conversation:
         return request_failed(-4, "Already friends", 403)
+
+    # 验证是否已经发送过好友请求
+    existing_request = Request.objects.filter(
+        sender=user_cur, receiver=user, status=0
+    ).exists()
+
+    if existing_request:
+        return request_failed(-5, "Friend request already sent", 403)
     
     new_request = Request(
         sender=user_cur,
@@ -220,9 +222,7 @@ def get_friend_requests(req: HttpRequest):
     if req.method != "GET":
         return BAD_METHOD
     
-    body = json.loads(req.body.decode("utf-8"))
-
-    user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
+    user_email = req.GET.get("user_email", "")
 
     friend_requests = Request.objects.filter(receiver__email=user_email).order_by("-time")  # 按申请时间降序排列
 
@@ -263,17 +263,14 @@ def friend_request_handle(req: HttpRequest):
     if req.method == "POST":
         # 处理好友请求
         request = Request.objects.filter(sender=sender, receiver=receiver).first()
-        
-        new_conversation = Conversation(
-            type=0,  # 私聊类型
-            members=[sender, receiver],
-        )
-        new_conversation.save()
-
-        request.status = 2 
+        request.status = 2
         request.save()
 
-        return request_success({"message": "已接受"})
+        new_conversation = Conversation(type=0)
+        new_conversation.save()
+        new_conversation.members.add(sender, receiver)
+
+        return request_success({"message": "已接受好友申请"})
 
     elif req.method == "DELETE":
         # 拒绝好友请求
@@ -282,4 +279,56 @@ def friend_request_handle(req: HttpRequest):
         request.status = 1
         request.save()
 
-        return request_success({"message": "已拒绝"})
+        return request_success({"message": "已拒绝该好友申请"})
+    
+
+# @CheckRequire
+# def groups(req: HttpRequest):
+#     jwt_token = req.headers.get("Authorization")
+#     if not jwt_token:
+#         return request_failed(-2, "Invalid or expired JWT", 401)
+    
+#     if req.method not in ["GET", "POST"]:
+#         return BAD_METHOD
+#     # 获取群组列表
+#     if req.method == "GET":
+#         user_email = req.GET.get("user_email", "")
+
+
+@CheckRequire
+def get_friends_list(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    if req.method != "GET":
+        return BAD_METHOD
+    
+    user_email = req.GET.get("user_email", "")
+
+    # 从对话中获取好友列表中好友的email列表
+    friends_emails = (
+        Conversation.objects.filter(type=0).filter(members__email=user_email)
+        .values_list("members__email", flat=True)
+        .exclude(members__email=user_email)  # 排除自己
+        .distinct()  # 避免重复 
+    )
+
+    friends = User.objects.filter(email__in=friends_emails)
+
+    friends_list = [
+        {
+            "email": friend.email,
+            "name": friend.name,
+            "avatar_path": friend.avatar.url if friend.avatar else "",
+        }
+        for friend in friends
+    ]
+
+    return request_success({"friends": friends_list})
+
+# @CheckRequire
+# def manage_friends(req: HttpRequest):
+#     jwt_token = req.headers.get("Authorization")
+#     if not jwt_token:
+#         return request_failed(-2, "Invalid or expired JWT", 401)
