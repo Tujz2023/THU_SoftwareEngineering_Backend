@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.shortcuts import render
 
 from ims.models import User
-from ims.models import Conversation, User, Message, Request, Invitation, Group
+from ims.models import Conversation, User, Message, Request, Invitation, Group, Interface
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -35,6 +35,7 @@ def login(req: HttpRequest):
         }
     return request_success(return_data) # msg: Succeed.
 
+@CheckRequire 
 def register(req: HttpRequest):
     if req.method != "POST":
         return BAD_METHOD
@@ -80,6 +81,7 @@ def delete(req: HttpRequest):
     user.save()
     return request_success({"message": "注销成功"})
 
+@CheckRequire 
 def account_info(req: HttpRequest):
     if req.method == "GET":
         body = json.loads(req.body.decode("utf-8"))
@@ -664,11 +666,37 @@ def message(req: HttpRequest):
     conv = Conversation.objects.filter(id=conv_id).first()
     if not conv:
         return request_failed(-1, "Conversation not found", 404)
-    if content == ""
+    if content == "":
         return request_failed(-3, "Content is empty", 400)
     if len(content) > MAX_CHAR_LENGTH:
         return request_failed(-3, "Content is too long", 400)
     new_message = Message(content=content, sender=cur_user, conversation=conv)
     new_message.save()
     return request_success()
-    
+
+@CheckRequire 
+def interface(req: HttpRequest):
+    if req.method == "GET":
+        jwt_token = req.headers.get("Authorization")
+        if jwt_token == None or jwt_token == "":
+            return request_failed(-2, "Invalid or expired JWT", status_code=401)
+        payload = check_jwt_token(jwt_token)
+        if payload is None:
+            return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+        cur_user = User.objects.filter(email=payload["email"]).first()
+        conversation_id = req.GET.get("conversation_id", "")
+        conver = Conversation.objects.filter(id=conversation_id).first()
+        if not conver:
+            return request_failed(-1, "Conversation not found", 404)
+        itf = Interface.objects.filter(conv=conver, user=cur_user).first()
+        if not itf:
+            return request_failed(-1, "Conversation does not contain user", 404)
+        return_data = {
+            "unreads": itf.unread,
+            "notification": itf.notification,
+            "ontop": itf.ontop
+        }
+        return request_success(return_data)
+
+    else:
+        return BAD_METHOD
