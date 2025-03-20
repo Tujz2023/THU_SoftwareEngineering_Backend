@@ -67,10 +67,11 @@ class Conversation(models.Model):
 
 class Interface(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
-    conv = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    conv = models.OneToOneField(Conversation, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     notification = models.BooleanField(default=True)
     unreads = models.IntegerField(default=0)
+    ontop = models.BooleanField(default=False)
 
     class Meta:
         indexes = [models.Index(fields=["id"])]
