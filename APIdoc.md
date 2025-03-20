@@ -43,8 +43,8 @@ POST请求
 }
 ```
 
-- 若用户昵称不符合要求，状态码400，错误码-3，错误信息"Name too long"。 
-- 若用户已存在，状态码400，错误码-1，错误信息"User already exists"。 
+- 若用户昵称不符合要求，状态码400，错误码-3，错误信息"Name too long"。
+- 若用户已存在，状态码400，错误码-1，错误信息"User already exists"。
 - 若用户密码不符合要求，状态码400，错误码-4，错误信息"Password illegal"。
 - 如果用户恢复，状态码200，返回信息"已恢复账户，请用原密码登录"。
 
@@ -75,7 +75,7 @@ DELETE请求
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 
 ### 用户认证
 
@@ -115,8 +115,8 @@ POST请求
 ```
 
 - 若用户不存在，状态码404，错误码-1，错误信息"User not found"。
-- 若用户已注销，状态码404，错误码1，错误信息"User deleted"。 
-- 若密码错误，状态码401，错误码-3，错误信息"密码错误"。 
+- 若用户已注销，状态码404，错误码1，错误信息"User deleted"。
+- 若密码错误，状态码401，错误码-3，错误信息"密码错误"。
 
 #### 个人信息管理/account/info
 
@@ -164,7 +164,7 @@ name: 用户昵称
 }
 ```
 
-- 若用户邮箱不存在，状态码404，错误码-1，错误信息"用户不存在"。 
+- 若用户邮箱不存在，状态码404，错误码-1，错误信息"用户不存在"。
 
 ##### 修改个人信息
 
@@ -203,8 +203,8 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若用户邮箱格式错误，状态码400，错误码1，错误信息"Invalid email"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若用户邮箱格式错误，状态码400，错误码1，错误信息"Invalid email"。
 - 若用户昵称不符合要求，状态码400，错误码-3，错误信息"Name too long"。
 
 ### 好友关系
@@ -225,7 +225,7 @@ PUT请求：
 - query_email: 要查找的用户的邮箱
 - query_name: 要查找的用户的昵称
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回查找用户的基本信息，成功响应格式为:
 
 ```json
@@ -253,8 +253,8 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若无查询条件，状态码400，错误码-7，错误信息"Missing or error type of [query_email] or [query_name]"。 
-- 若查找的用户不存在或者已经被注销，状态码404，错误码-1，错误信息"User not found or deleted"。  
+- 若无查询条件，状态码400，错误码-7，错误信息"Missing or error type of [query_email] or [query_name]"。
+- 若查找的用户不存在或者已经被注销，状态码404，错误码-1，错误信息"User not found or deleted"。
 
 #### 好友申请/add_friend
 
@@ -270,12 +270,13 @@ PUT请求：
     "created_at": "2025-03-13T14:30:00Z"
 }
 ```
+
 - user_email: 发送好友申请的用户邮箱
 - search_email: 要查找的用户的邮箱
 - message: 申请消息
 - created_at: 申请时间
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回申请成功的消息，成功响应格式为:
 
 ```json
@@ -295,10 +296,10 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若查找的用户email错误或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found"。  
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若查找的用户email错误或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found"。
 - 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。
-- 若已经向对方发送过好友请求但是对方并未处理，状态码403，错误码-5，错误信息"Friend request already sent"。  
+- 若已经向对方发送过好友请求但是对方并未处理，状态码403，错误码-5，错误信息"Friend request already sent"。
 
 #### 好友申请列表/friend_requests
 
@@ -314,7 +315,7 @@ PUT请求：
 
 - user_email: 查看好友申请列表的用户邮箱
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回好友申请列表，成功响应格式为:
 
 ```json
@@ -360,9 +361,9 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。        
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 
-#### 处理好友申请/friend_requests/{requestId}
+#### 处理好友申请/friend_requests/
 
 该API用于处理（同意或拒绝）指定好友申请。允许POST和DELETE请求。
 
@@ -374,10 +375,11 @@ PUT请求：
     "receiver_user_email": "target_email"
 }
 ```
+
 - send_user_email: 发送好友申请的用户邮箱
 - receiver_user_email: 接收好友申请的用户邮箱
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回拒绝好友申请成功的消息，成功响应格式为:
 
 ```json
@@ -398,7 +400,7 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若处理的用户已经被注销，状态码404，错误码-1，错误信息"User deleted"。    
+- 若处理的用户已经被注销，状态码404，错误码-1，错误信息"User deleted"。
 
 DELETE请求：
 
@@ -409,7 +411,7 @@ DELETE请求：
 }
 ```
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回删除好友申请成功的消息，成功响应格式为:
 
 ```json
@@ -434,7 +436,7 @@ DELETE请求：
 
 #### 分组管理/groups
 
-该API用于管理用户的分组，包括获取和创建分组，允许GET和POST请求。  
+该API用于管理用户的分组，包括获取和创建分组，允许GET和POST请求。
 
 ##### 获取分组名单
 
@@ -479,7 +481,7 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 
 ##### 创建分组
 
@@ -495,7 +497,7 @@ POST请求：
 - user_email: 创建分组的用户邮箱
 - name: 分组名称
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回创建分组成功的消息，成功响应格式为:
 
 ```json
@@ -515,10 +517,10 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若分组名称已存在，状态码409，错误码-1，错误信息"Group already exists"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若分组名称已存在，状态码409，错误码-1，错误信息"Group already exists"。
 
-#### 分组操作/groups/{group_id}
+#### 分组操作/groups/
 
 该API用于操作指定分组，包括查看分组详情、修改分组名称、删除分组。
 
@@ -536,7 +538,7 @@ GET请求：
 - user_email: 查看分组详情的用户邮箱
 - group_id: 查看分组详情的分组ID
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回分组详情，成功响应格式为:
 
 ```json
@@ -579,8 +581,8 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
 
 ##### 修改分组名称
 
@@ -594,7 +596,7 @@ PUT请求：
 }
 ```
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回修改分组名称成功的消息，成功响应格式为:
 
 ```json
@@ -614,9 +616,9 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。 
-- 若分组名称已存在，状态码409，错误码-1，错误信息"Name already exists"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
+- 若分组名称已存在，状态码409，错误码-1，错误信息"Name already exists"。
 
 ##### 删除分组
 
@@ -629,7 +631,7 @@ DELETE请求：
 }
 ```
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回删除分组成功的消息，成功响应格式为:
 
 ```json
@@ -649,10 +651,10 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
 
-#### 组内成员管理/groups/{group_id}/members
+#### 组内成员管理/groups//members
 
 该API用于管理指定分组的成员，包括获取分组成员列表、添加分组成员、删除分组成员。
 
@@ -668,7 +670,7 @@ GET请求：
 
 - group_id: 获取分组成员列表的分组ID
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回分组成员列表，成功响应格式为:
 
 ```json
@@ -704,8 +706,8 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
 
 ##### 添加分组成员
 
@@ -717,10 +719,11 @@ POST请求：
     "member_email": "target_email"
 }
 ```
+
 - group_id: 添加分组成员的分组ID
 - member_email: 要添加的成员邮箱
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回添加分组成员成功的消息，成功响应格式为:
 
 ```json
@@ -740,10 +743,10 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。 
-- 若成员不存在，状态码404，错误码-1，错误信息"Member not found"。 
-- 若成员已在分组中，状态码400，错误码-3，错误信息"Member already in group"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
+- 若成员不存在，状态码404，错误码-1，错误信息"Member not found"。
+- 若成员已在分组中，状态码400，错误码-3，错误信息"Member already in group"。
 
 ##### 删除分组成员
 
@@ -759,7 +762,7 @@ DELETE请求：
 - group_id: 删除分组成员的分组ID
 - member_email: 要删除的成员邮箱
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回删除分组成员成功的消息，成功响应格式为:
 
 ```json
@@ -779,10 +782,10 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。 
-- 若成员不存在，状态码404，错误码-1，错误信息"Member not found"。 
-- 若成员不在分组中，状态码400，错误码-3，错误信息"Member not in group"。         
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
+- 若成员不存在，状态码404，错误码-1，错误信息"Member not found"。
+- 若成员不在分组中，状态码400，错误码-3，错误信息"Member not in group"。
 
 #### 好友列表/friends
 
@@ -798,7 +801,7 @@ DELETE请求：
 
 - user_email: 查看好友列表的用户ID
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回好友列表，成功响应格式为:
 
 ```json
@@ -834,10 +837,10 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若用户不存在，状态码404，错误码-1，错误信息"用户不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若用户不存在，状态码404，错误码-1，错误信息"用户不存在"。
 
-#### 好友操作/friends/{friend_email}
+#### 好友操作/friends/
 
 该API用于操作指定好友，包括查看好友详情、删除好友，为好友分组操作。
 
@@ -855,7 +858,7 @@ GET请求：
 - user_email: 查看好友详情的用户email
 - friend_email: 查看好友详情的好友邮箱
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回好友详情，成功响应格式为:
 
 ```json
@@ -894,9 +897,9 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。 
-- 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。
 
 ##### 删除好友
 
@@ -912,7 +915,7 @@ DELETE请求：
 - user_email: 删除好友的用户email
 - friend_email: 要删除的好友email
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回删除好友成功的消息，成功响应格式为:
 
 ```json
@@ -932,9 +935,9 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。 
-- 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。
 
 ##### 好友分组操作
 
@@ -952,7 +955,7 @@ PUT请求：
 - friend_email: 操作的好友email
 - group_id: 要添加到的分组ID
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回操作好友分组成功的消息，成功响应格式为:
 
 ```json
@@ -972,11 +975,11 @@ PUT请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。 
-- 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。 
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。 
-- 若好友已经在该分组中，状态码400，错误码-3，错误信息"Friend already in group"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。
+- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
+- 若好友已经在该分组中，状态码400，错误码-3，错误信息"Friend already in group"。
 
 ### 在线会话
 
@@ -1013,17 +1016,6 @@ GET请求：
             "notice_able":true,
             "unread_count":0
         }
-        {
-            "id":"convid",
-            "name":"conversationName",
-            "avatar_path":"AvatarUrl",
-            "last_message":"lastMessage",
-            "last_message_time":"lastMessageTime",
-            "is_chat_group":true,
-            "is_top":true,
-            "notice_able":true,
-            "unread_count":0
-        }
     ]
 }
 ```
@@ -1048,8 +1040,8 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
 ##### 创建会话
 
@@ -1095,32 +1087,24 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若成员不存在，状态码404，错误码-1，错误信息"成员不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若成员不存在，状态码404，错误码-1，错误信息"成员不存在"。
 
-#### 聊天消息发送 /conversations/{conversationId}/messages
+#### 聊天消息发送 /conversations//messages
 
-该API用于发送消息。  
+该API用于发送消息。
 
 POST请求：
 
 ```json
 {
     "conversationId": "conversationId",
-    "sender_id": "user_email",
-    "is_chat_group": true,
-    "receiver_id": ["user_email1", "user_email2"],
     "content": "messageContent",
-    "timestamp": "2025-03-13T14:30:00Z"
 }
 ```
 
 - conversationId: 发送消息的会话ID
-- sender_id: 发送者ID
-- is_chat_group: 是否为群聊
-- receiver_id: 接收者ID列表
 - content: 消息内容
-- timestamp: 消息发送时间
 
 响应：
 请求成功时，设置状态码为200OK，返回发送消息成功的消息，成功响应格式为:
@@ -1128,7 +1112,7 @@ POST请求：
 ```json
 {
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
 }
 ```
 
@@ -1141,58 +1125,12 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
-- 若发送者不存在，状态码404，错误码-1，错误信息"发送者不存在"。 
-- 若接收者不存在，状态码404，错误码-1，错误信息"接收者不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若消息为空，状态码400，错误码-3，错误信息"Content is empty"。
+- 若消息过长（>255），状态码400，错误码-3，错误信息"Content too long"。
 
-#### 回复消息/conversations/{conversationId}/messages/{messageId}/reply
-
-该API用于回复消息。
-
-POST请求：
-
-```json
-{
-    "conversationId": "conversationId",
-    "message_id": "messageId",
-    "sender_id": "user_email",
-    "content": "messageContent",
-    "timestamp": "2025-03-13T14:30:00Z"
-}
-```
-
-- conversationId: 回复消息的会话ID
-- message_id: 回复的消息ID
-- sender_id: 回复者ID
-- content: 回复消息内容
-- timestamp: 回复消息时间
-
-响应：  
-请求成功时，设置状态码为200OK，返回回复消息成功的消息，成功响应格式为:
-
-```json
-{
-    "code": 0,
-    "info": "success",
-}
-```
-
-请求失败时，错误相应的格式为：
-
-```json
-{  
-    "code": *,  
-    "info": "[error message]"
-}
-```
-
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
-- 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。 
-- 若发送者不存在，状态码404，错误码-1，错误信息"发送者不存在"。 
-
-#### 会话管理 /conversations/{conversationId}
+#### 会话管理 /conversations/
 
 该API用于管理特定的会话，包括查看会话详情，聊天记录，置顶会话，免打扰会话
 
@@ -1276,8 +1214,8 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。     
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
 ##### 查看会话聊天记录
 
@@ -1343,8 +1281,8 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
 ##### 置顶会话
 
@@ -1380,8 +1318,8 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
 ##### 免打扰会话
 
@@ -1417,10 +1355,10 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
-#### 聊天记录管理 /conversations/{conversationId}/messages
+#### 聊天记录管理 /conversations//messages
 
 该API用于管理特定会话的聊天记录，包括筛选聊天记录，删除聊天记录
 
@@ -1491,8 +1429,8 @@ GET请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
 ##### 删除聊天记录
 
@@ -1528,13 +1466,13 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。 
-- 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
+- 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。
 
 ### 群聊管理
 
-#### 设置群组管理员/conversations/{conversationId}/set_admin
+#### 设置群组管理员/conversations//set_admin
 
 该API用于设置群组管理员。
 
@@ -1556,7 +1494,7 @@ POST请求：
 请求成功时，设置状态码为200OK，返回设置群组管理员成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "设置群组管理员成功"
@@ -1572,11 +1510,11 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 权限不足，状态码403，错误码-3，错误信息"非群主不能设置管理员"。  
-- 若设置的成员已经是管理员，状态码403，错误码-3，错误信息"成员已经是管理员"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 权限不足，状态码403，错误码-3，错误信息"非群主不能设置管理员"。
+- 若设置的成员已经是管理员，状态码403，错误码-3，错误信息"成员已经是管理员"。
 
-#### 解除群组管理员/conversations/{conversationId}/unset_admin
+#### 解除群组管理员/conversations//unset_admin
 
 该API用于解除群组管理员。
 
@@ -1598,7 +1536,7 @@ DELETE请求：
 请求成功时，设置状态码为200OK，返回解除群组管理员成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "解除群组管理员成功"
@@ -1614,11 +1552,11 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 权限不足，状态码403，错误码-3，错误信息"非群主不能解除管理员"。  
-- 若解除的管理员不是群组管理员，状态码403，错误码-3，错误信息"管理员不是群组管理员"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 权限不足，状态码403，错误码-3，错误信息"非群主不能解除管理员"。
+- 若解除的管理员不是群组管理员，状态码403，错误码-3，错误信息"管理员不是群组管理员"。
 
-#### 发布群公告/conversations/{conversationId}/notifications
+#### 发布群公告/conversations//notifications
 
 该API用于发布群公告。
 
@@ -1642,7 +1580,7 @@ POST请求：
 请求成功时，设置状态码为200OK，返回发布群公告成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "发布群公告成功"
@@ -1658,10 +1596,10 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若发布公告的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能发布公告"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若发布公告的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能发布公告"。
 
-#### 群主转让/conversations/{conversationId}/transfer_owner
+#### 群主转让/conversations//transfer_owner
 
 该API用于群主转让。
 
@@ -1683,7 +1621,7 @@ POST请求：
 请求成功时，设置状态码为200OK，返回群主转让成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "群主转让成功"
@@ -1699,11 +1637,11 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若转让群主的非群主，状态码403，错误码-3，错误信息"非群主不能转让群主"。 
-- 若转让的新群主不是群组成员，状态码403，错误码-3，错误信息"新群主不是群组成员"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若转让群主的非群主，状态码403，错误码-3，错误信息"非群主不能转让群主"。
+- 若转让的新群主不是群组成员，状态码403，错误码-3，错误信息"新群主不是群组成员"。
 
-#### 移除群成员/conversations/{conversationId}/remove_member
+#### 移除群成员/conversations//remove_member
 
 该API用于移除群成员。
 
@@ -1725,7 +1663,7 @@ DELETE请求：
 请求成功时，设置状态码为200OK，返回移除群成员成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "移除群成员成功"
@@ -1741,12 +1679,12 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若移除普通群员的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能移除群员"。 
-- 若移除群管理员的非群主，状态码403，错误码-3，错误信息"非群主不能移除群管理员"。 
-- 若移除的群成员不是群组成员，状态码403，错误码-3，错误信息"群成员不是群组成员"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若移除普通群员的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能移除群员"。
+- 若移除群管理员的非群主，状态码403，错误码-3，错误信息"非群主不能移除群管理员"。
+- 若移除的群成员不是群组成员，状态码403，错误码-3，错误信息"群成员不是群组成员"。
 
-#### 退出群组/conversations/{conversationId}/quit
+#### 退出群组/conversations//quit
 
 该API用于退出群组。
 
@@ -1766,7 +1704,7 @@ DELETE请求：
 请求成功时，设置状态码为200OK，返回退出群组成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "退出群组成功"
@@ -1782,10 +1720,10 @@ DELETE请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若退出群组的非群成员，状态码403，错误码-3，错误信息"非群成员不能退出群组"。       
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若退出群组的非群成员，状态码403，错误码-3，错误信息"非群成员不能退出群组"。
 
-#### 进群邀请/conversations/{conversationId}/invite
+#### 进群邀请/conversations//invite
 
 该API用于群组邀请。
 
@@ -1809,7 +1747,7 @@ POST请求：
 请求成功时，设置状态码为200OK，返回群组邀请成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "邀请成功，等待管理员确认"
@@ -1825,10 +1763,10 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若邀请的成员已经是群组成员，状态码403，错误码-3，错误信息"成员已经是群组成员"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若邀请的成员已经是群组成员，状态码403，错误码-3，错误信息"成员已经是群组成员"。
 
-#### 处理群组邀请/conversations/{conversationId}/handle_invite
+#### 处理群组邀请/conversations//handle_invite
 
 该API用于处理群组邀请。
 
@@ -1856,7 +1794,7 @@ POST请求：
 请求成功时，设置状态码为200OK，返回处理群组邀请成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success",
     "message": "同意该用户入群"
@@ -1872,10 +1810,10 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若非群主或管理员处理群组邀请，状态码403，错误码-3，错误信息"非群主或管理员不能处理邀请"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若非群主或管理员处理群组邀请，状态码403，错误码-3，错误信息"非群主或管理员不能处理邀请"。
 
-#### 更新群信息/conversations/{conversationId}/update_info
+#### 更新群信息/conversations//update_info
 
 该API用于更新群信息。
 
@@ -1894,7 +1832,7 @@ POST请求：
 
 - conversationId: 更新群信息的会话ID
 - user_email: 更新群信息的用户ID
-- name: 群名称  
+- name: 群名称
 - avatar_path: 群头像URL
 - admins: 群管理员ID列表
 - members: 群成员ID列表
@@ -1903,7 +1841,7 @@ POST请求：
 请求成功时，设置状态码为200OK，返回更新群信息成功的消息，成功响应格式为:
 
 ```json
-{    
+{  
     "code": 0,
     "info": "success"
 }
@@ -1918,5 +1856,5 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。 
-- 若更新群信息的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能更新群信息"。 
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若更新群信息的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能更新群信息"。

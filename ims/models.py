@@ -55,6 +55,7 @@ class Conversation(models.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "name": self.ConvName,
             "type": self.type,
             "avatar": self.avatar.url,
             "creator": self.creator.email,

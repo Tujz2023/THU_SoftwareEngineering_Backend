@@ -609,4 +609,66 @@ def manage_friends(req: HttpRequest):
 
         return request_success({"message": "添加好友到分组成功"})
         
+@CheckRequire
+def conv(req: HttpRequest):
+    if req.method not in ["GET", "POST"]:
+        return BAD_METHOD
+    # jwt check
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+    cur_user = User.objects.filter(email=payload["email"]).first()
 
+    if req.method == "GET":
+        body = json.loads(req.body.decode("utf-8"))
+        conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+        conv = Conversation.objects.filter(id=conv_id).first()
+        if not conv:
+            return request_failed(-1, "Conversation not found", 404)
+        return request_success({"conversation": conv.serialize()})
+    elif req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        members = require(body, "members", "list", err_msg="Missing or error type of [members]")
+        new_conv = Conversation(type=1,)
+        for member in members:
+            if not User.objects.filter(email=member).exists():
+                return request_failed(-1, "User not found", 404)
+            member_user = User.objects.filter(email=member).first()
+            if not Conversation.objects.filter(
+            type=0  # 私聊类型
+            ).filter(members=member_user).filter(members=cur_user).exists():
+                return request_failed(-3, "Not friend with current user.", 400)
+            new_conv.members.add(member_user)
+        new_conv.save()
+        return request_success({"conversation": new_conv.serialize()})
+
+
+@CheckRequire
+def message(req: HttpRequest):
+    if req.method != "POST":
+        return BAD_METHOD
+    # jwt check
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+    cur_user = User.objects.filter(email=payload["email"]).first()
+    body = json.loads(req.body.decode("utf-8"))
+    conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+    content = require(body, "content", "string", err_msg="Missing or error type of [content]")
+    conv = Conversation.objects.filter(id=conv_id).first()
+    if not conv:
+        return request_failed(-1, "Conversation not found", 404)
+    if content == ""
+        return request_failed(-3, "Content is empty", 400)
+    if len(content) > MAX_CHAR_LENGTH:
+        return request_failed(-3, "Content is too long", 400)
+    new_message = Message(content=content, sender=cur_user, conversation=conv)
+    new_message.save()
+    return request_success()
+    
