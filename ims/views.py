@@ -132,6 +132,10 @@ def search_users(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
     if req.method != "GET":
         return BAD_METHOD
@@ -170,6 +174,10 @@ def add_friend(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
     if req.method != "POST":
         return BAD_METHOD
@@ -219,6 +227,10 @@ def get_friend_requests(req: HttpRequest):
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
     
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
     if req.method != "GET":
         return BAD_METHOD
     
@@ -246,6 +258,10 @@ def friend_request_handle(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
     if req.method not in ["POST", "DELETE"]:
         return BAD_METHOD
@@ -288,6 +304,10 @@ def groups(req: HttpRequest):
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
     
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
     if req.method not in ["GET", "POST"]:
         return BAD_METHOD
     # 获取群组列表
@@ -323,6 +343,10 @@ def manage_groups(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
     if req.method not in ["GET", "PUT", "DELETE"]:
         return BAD_METHOD
@@ -389,6 +413,10 @@ def manage_group_members(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
     if req.method not in ["GET", "POST", "DELETE"]:
         return BAD_METHOD
@@ -459,6 +487,10 @@ def get_friends_list(req: HttpRequest):
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
     
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
     if req.method != "GET":
         return BAD_METHOD
     
@@ -490,6 +522,10 @@ def manage_friends(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
+    
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
     if req.method not in ["GET", "PUT", "DELETE"]:
         return BAD_METHOD
