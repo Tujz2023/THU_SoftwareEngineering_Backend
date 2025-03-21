@@ -701,7 +701,7 @@ def interface(req: HttpRequest):
         return request_failed(-1, "Conversation does not contain user", 404)
     if req.method == "GET":
         return_data = {
-            "unreads": itf.unread,
+            "unreads": itf.unreads,
             "notification": itf.notification,
             "ontop": itf.ontop
         }
@@ -718,7 +718,7 @@ def interface(req: HttpRequest):
             itf.notification = notification
         if 'unreads' in body.keys():
             unreads = require(body, "unreads", "int", err_msg="Missing or error type of [unreads]")
-            itf.unread = unreads
+            itf.unreads = unreads
         itf.save()
         return request_success()
     else:
