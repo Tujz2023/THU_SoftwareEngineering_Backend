@@ -650,7 +650,7 @@ def conv(req: HttpRequest):
 
 @CheckRequire
 def message(req: HttpRequest):
-    if req.method != "POST":
+    if req.method not in ["POST", "GET"]:
         return BAD_METHOD
     # jwt check
     jwt_token = req.headers.get("Authorization")
@@ -660,43 +660,67 @@ def message(req: HttpRequest):
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401) 
     cur_user = User.objects.filter(email=payload["email"]).first()
+    if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+        return request_failed(1, "Not in conversation", 400)
     body = json.loads(req.body.decode("utf-8"))
     conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-    content = require(body, "content", "string", err_msg="Missing or error type of [content]")
     conv = Conversation.objects.filter(id=conv_id).first()
     if not conv:
         return request_failed(-1, "Conversation not found", 404)
-    if content == "":
-        return request_failed(-3, "Content is empty", 400)
-    if len(content) > MAX_CHAR_LENGTH:
-        return request_failed(-3, "Content is too long", 400)
-    new_message = Message(content=content, sender=cur_user, conversation=conv)
-    new_message.save()
-    return request_success()
+
+    if req.method == "POST":
+        content = require(body, "content", "string", err_msg="Missing or error type of [content]")
+        if content == "":
+            return request_failed(-3, "Content is empty", 400)
+        if len(content) > MAX_CHAR_LENGTH:
+            return request_failed(-3, "Content is too long", 400)
+        new_message = Message(content=content, sender=cur_user, conversation=conv)
+        new_message.save()
+        return request_success()
+    else:
+        # GET method
+        messages = Message.objects.filter(conversation=conv).order_by("time")
+        return request_success({"messages": [msg.serialize() for msg in messages]})
 
 @CheckRequire 
 def interface(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+    cur_user = User.objects.filter(email=payload["email"]).first()
+
+    conversation_id = req.GET.get("conversation_id", "")
+    conver = Conversation.objects.filter(id=conversation_id).first()
+    if not conver:
+        return request_failed(-1, "Conversation not found", 404)
+    itf = Interface.objects.filter(conv=conver, user=cur_user).first()
+    if not itf:
+        return request_failed(-1, "Conversation does not contain user", 404)
     if req.method == "GET":
-        jwt_token = req.headers.get("Authorization")
-        if jwt_token == None or jwt_token == "":
-            return request_failed(-2, "Invalid or expired JWT", status_code=401)
-        payload = check_jwt_token(jwt_token)
-        if payload is None:
-            return request_failed(-2, "Invalid or expired JWT", status_code=401) 
-        cur_user = User.objects.filter(email=payload["email"]).first()
-        conversation_id = req.GET.get("conversation_id", "")
-        conver = Conversation.objects.filter(id=conversation_id).first()
-        if not conver:
-            return request_failed(-1, "Conversation not found", 404)
-        itf = Interface.objects.filter(conv=conver, user=cur_user).first()
-        if not itf:
-            return request_failed(-1, "Conversation does not contain user", 404)
         return_data = {
             "unreads": itf.unread,
             "notification": itf.notification,
             "ontop": itf.ontop
         }
         return request_success(return_data)
-
+    elif req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+        # conditional
+        if 'ontop' in body.keys():
+            ontop = require(body, "ontop", "bool", err_msg="Missing or error type of [ontop]")
+            itf.ontop = ontop
+        if 'notification' in body.keys():
+            notification = require(body, "notification", "bool", err_msg="Missing or error type of [notification]")
+            itf.notification = notification
+        if 'unreads' in body.keys():
+            unreads = require(body, "unreads", "int", err_msg="Missing or error type of [unreads]")
+            itf.unread = unreads
+        itf.save()
+        return request_success()
     else:
         return BAD_METHOD
+    

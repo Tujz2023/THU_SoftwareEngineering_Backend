@@ -1152,7 +1152,7 @@ GET请求：
 ```json
 {
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "id": "convid",
     "is_chat_group": true,
     "name": "conversationName",
@@ -1217,7 +1217,7 @@ GET请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
-##### 查看会话聊天记录
+##### 查看会话聊天记录 /message
 
 GET请求：
 
@@ -1236,7 +1236,7 @@ GET请求：
 ```json
 {
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "messages": [
         {
             "id": "messageId",
@@ -1284,19 +1284,23 @@ GET请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
-##### 置顶会话
+##### 置顶会话、消息免打扰、未读信息数设置 /interface
 
 POST请求：
 
 ```json
 {
     "conversationId": "conversationId",
-    "is_top": true
+    "ontop": true,
+    "notification": false,
+    "unreads": unread_number
 }
 ```
 
 - conversationId: 置顶会话的会话ID
-- is_top: 是否置顶
+- ontop: 是否置顶，默认保持
+- notification: 是否消息免打扰，默认保持
+- unreads: 未读消息数，默认为保持
 
 响应：
 请求成功时，设置状态码为200OK，返回置顶会话成功的消息，成功响应格式为:
@@ -1304,45 +1308,7 @@ POST请求：
 ```json
 {
     "code": 0,
-    "info": "success",
-    "message": "置顶会话成功"
-}
-```
-
-请求失败时，错误相应的格式为：
-
-```json
-{  
-    "code": *,  
-    "info": "[error message]"
-}
-```
-
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
-
-##### 免打扰会话
-
-POST请求：
-
-```json
-{
-    "conversationId": "conversationId",
-    "notice_able": true
-}
-```
-
-- conversationId: 免打扰会话的会话ID
-- notice_able: 是否允许提醒
-
-响应：
-请求成功时，设置状态码为200OK，返回免打扰会话成功的消息，成功响应格式为:
-
-```json
-{
-    "code": 0,
-    "info": "success",
-    "message": "免打扰会话成功"
+    "info": "Succeed",
 }
 ```
 
