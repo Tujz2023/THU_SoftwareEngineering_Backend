@@ -14,7 +14,7 @@ from utils.utils_jwt import EXPIRE_IN_SECONDS, SALT, b64url_encode
 class ImsTests(TestCase):
     # Initializer
     def setUp(self):
-        User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password="123456")
+        holder = User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password="123456", user_info="tujz's account")
         User.objects.create(email="delete@mails.com", name="delete", password="123456", deleted=True)
 
     # ! Utility functions
@@ -173,3 +173,55 @@ class ImsTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
         self.assertTrue(User.objects.filter(email="delete@mails.com").first().deleted)
+
+    # * Tests for account information 
+    def test_info_get_no_user(self):
+        data = {"email": "wrongemail@email.com"}
+        res = self.client.get('/account/info', data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+
+    def test_info_get_success(self):
+        data = {"email": "tujz23@mails.tsinghua.edu.cn"}
+        res = self.client.get('/account/info', data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['email'], "tujz23@mails.tsinghua.edu.cn")
+        self.assertEqual(res.json()['name'], "tujz")
+        self.assertEqual(res.json()['user_info'], "tujz's account")
+        self.assertEqual(res.json()['deleted'], False)
+
+    def test_info_get_success2(self):
+        data = {"email": "delete@mails.com"}
+        res = self.client.get('/account/info', data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['deleted'], True)
+
+    def test_info_modify_info(self):
+        headers = self.generate_header("tujz23@mails.tsinghua.edu.cn")
+        data = {"name": "newTujz", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info", "avatar_path": "new avatar path"}
+        res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        # 验证成功修改
+        modify_info = User.objects.filter(email="tujz24@mails.tsinghua.edu.cn").first()
+        self.assertEqual(modify_info.email, "tujz24@mails.tsinghua.edu.cn")
+        self.assertEqual(modify_info.name, "newTujz")
+        self.assertEqual(modify_info.user_info, "new user info")
+        self.assertEqual(modify_info.avatar, "new avatar path")
+        self.assertEqual(modify_info.deleted, False)
+        # 验证tujz23@mails.tsinghua.edu.cn没了
+        self.assertTrue(User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").exists() == False)
+        # 改回来
+        data = {"name": "tujz", "email": "tujz23@mails.tsinghua.edu.cn", "user_info": "tujz's account", "avatar_path": ""}
+        headers = self.generate_header("tujz23@mails.tsinghua.edu.cn")
+        res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
+        # 由于tujz23@mails.tsinghua.edu.cn被修改了，因此用tujz23@mails.tsinghua.edu.cn做token是不行的，应该属于wrong jwt_token的情况
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(res.json()['code'], -2)
+        # 换用tujz24@mails.tsinghua.edu.cn改回来
+        headers = self.generate_header("tujz24@mails.tsinghua.edu.cn")
+        res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)

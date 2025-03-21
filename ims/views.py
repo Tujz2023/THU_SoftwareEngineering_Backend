@@ -67,6 +67,7 @@ def register(req: HttpRequest):
         }
         return request_success(return_data)
 
+@CheckRequire
 def delete(req: HttpRequest):
     if req.method != "DELETE":
         return BAD_METHOD    
@@ -84,8 +85,10 @@ def delete(req: HttpRequest):
 @CheckRequire 
 def account_info(req: HttpRequest):
     if req.method == "GET":
-        body = json.loads(req.body.decode("utf-8"))
-        email = require(body, "email", "string", err_msg="Missing or error type of [email]")
+        # body = json.loads(req.body.decode("utf-8"))
+        # email = require(body, "email", "string", err_msg="Missing or error type of [email]")
+        email = req.GET.get("email")
+        email = require({"email": email}, "email", "string", err_msg="Missing or error type of [email]")
         user = User.objects.filter(email=email).first()
         if user is None:
             return request_failed(-1, "用户不存在", 404)
@@ -93,7 +96,8 @@ def account_info(req: HttpRequest):
         "email": user.email,
         "name": user.name,
         "user_info": user.user_info,
-        "avatar_path": user.avatar,
+        # "avatar_path": user.avatar,
+        "avatar_path": user.avatar.url if user.avatar else "",
         "deleted": user.deleted,
         }
         return request_success(return_data)
