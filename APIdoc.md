@@ -126,13 +126,8 @@ POST请求
 
 GET请求：
 
-```json
-{
-    "email": "user_email"
-}
-```
-
-- email: 用户的唯一身份标识，为邮箱
+使用authorization头部携带JWT令牌。
+无请求体
 
 请求成功时，设置状态码为200OK，返回用户的个人信息，成功响应格式为:
 
@@ -217,12 +212,10 @@ PUT请求：
 
 ```json
 {
-    "query_email": "target_email",
     "quey_name": "target_name"
 }
 ```
 
-- query_email: 要查找的用户的邮箱
 - query_name: 要查找的用户的昵称
 
 响应：
@@ -232,6 +225,7 @@ PUT请求：
 {
     "code": 0,
     "info": "success",
+    "user_id": "user_id",
     "name": "userName",
     "email": "userEmail",
     "avatar_path": "userAvatarUrl",
@@ -239,6 +233,7 @@ PUT请求：
 ```
 
 - name: 用户昵称
+- user_id: 用户ID
 - email: 用户邮箱
 - avatar_path: 用户头像URL
 - deleted: 该用户是否已被注销
@@ -265,14 +260,14 @@ PUT请求：
 ```json
 {
     "user_email": "user_email",
-    "search_email": "target_email",
+    "target_id": "target_id",
     "message":"Hello",
     "created_at": "2025-03-13T14:30:00Z"
 }
 ```
 
 - user_email: 发送好友申请的用户邮箱
-- search_email: 要查找的用户的邮箱
+- target_id: 接收好友申请的用户ID
 - message: 申请消息
 - created_at: 申请时间
 
@@ -297,7 +292,7 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若查找的用户email错误或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若查找的用户或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found"。
 - 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。
 - 若已经向对方发送过好友请求但是对方并未处理，状态码403，错误码-5，错误信息"Friend request already sent"。
 
@@ -307,13 +302,9 @@ PUT请求：
 
 通过GET方式请求，请求体为：
 
-```json
-{
-    "user_email": "user_email"
-}
-```
+使用authorization头部携带JWT令牌。
 
-- user_email: 查看好友申请列表的用户邮箱
+无请求体
 
 响应：
 请求成功时，设置状态码为200OK，返回好友申请列表，成功响应格式为:
@@ -324,6 +315,8 @@ PUT请求：
     "info": "success",
     "requests": [
         {
+            "sender_user_id": "user_id",
+            "receiver_user_id": "user_id",
             "user_email": "user_email",
             "user_name": "UserName",
             "avatar_path": "AvatarUrl",
@@ -332,6 +325,8 @@ PUT请求：
             "status": 0 // 0: 等待处理，1: 已同意，2: 已拒绝
         },
         {
+            "sender_user_id": "user_id",
+            "receiver_user_id": "user_id",
             "user_email": "user_email",
             "user_name": "UserName",
             "avatar_path": "AvatarUrl",
@@ -344,6 +339,8 @@ PUT请求：
 ```
 
 - requests: 好友申请列表，包含申请者的ID、昵称、头像URL、申请消息、状态。
+- sender_user_id: 申请者ID
+- receiver_user_id: 接收者ID
 - user_email: 申请者邮箱
 - user_name: 申请者昵称
 - avatar_path: 申请者头像URL
@@ -371,13 +368,13 @@ PUT请求：
 
 ```json
 {
-    "send_user_email": "user_email",
-    "receiver_user_email": "target_email"
+    "send_user_id": "sender_id",
+    "receiver_user_id": "receiver_id"
 }
 ```
 
-- send_user_email: 发送好友申请的用户邮箱
-- receiver_user_email: 接收好友申请的用户邮箱
+- send_user_id: 发送好友申请的用户ID
+- receiver_user_id: 接收好友申请的用户ID
 
 响应：
 请求成功时，设置状态码为200OK，返回拒绝好友申请成功的消息，成功响应格式为:
@@ -406,8 +403,8 @@ DELETE请求：
 
 ```json
 {
-    "send_user_email": "user_email",
-    "receiver_user_email": "target_email"
+    "send_user_id": "sender_id",
+    "receiver_user_id": "receiver_id"
 }
 ```
 
@@ -442,11 +439,8 @@ DELETE请求：
 
 GET请求：
 
-```json
-{
-    "user_email": "user_email"
-}
-- user_email: 查看分组名单的用户邮箱
+使用authorization头部携带JWT令牌。
+无请求体
 
 响应：  
 请求成功时，设置状态码为200OK，返回分组名单，成功响应格式为:
@@ -487,14 +481,16 @@ GET请求：
 
 POST请求：
 
+需要使用authorization头部携带JWT令牌。
+
+请求体为：
+
 ```json
 {
-    "user_email": "user_email",
     "name": "groupName"
 }
 ```
 
-- user_email: 创建分组的用户邮箱
 - name: 分组名称
 
 响应：
@@ -520,7 +516,7 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若分组名称已存在，状态码409，错误码-1，错误信息"Group already exists"。
 
-#### 分组操作/groups/
+#### 分组操作/groups/manage_groups
 
 该API用于操作指定分组，包括查看分组详情、修改分组名称、删除分组。
 
@@ -528,14 +524,16 @@ POST请求：
 
 GET请求：
 
+需要使用authorization头部携带JWT令牌。
+
+请求体为：
+
 ```json
 {
-    "user_email": "user_email",
     "group_id": "group_id"
 }
 ```
 
-- user_email: 查看分组详情的用户邮箱
 - group_id: 查看分组详情的分组ID
 
 响应：
@@ -550,11 +548,13 @@ GET请求：
         "name": "groupName",
         "members": [
             {
+                "id": "user_id",
                 "email": "user_email",
                 "name": "userName",
                 "avatar_path": "AvatarUrl",
             },  
             {
+                "id": "user_id",
                 "email": "user_email",
                 "name": "userName",
                 "avatar_path": "AvatarUrl",
@@ -567,7 +567,8 @@ GET请求：
 - group: 分组详情，包含分组的ID、名称、成员列表。
 - id: 分组ID
 - name: 分组名称
-- members: 分组成员列表，包含成员的email、昵称、头像URL。
+- members: 分组成员列表，包含成员的id、email、昵称、头像URL。   
+- id：成员ID    
 - email: 成员邮箱
 - name: 成员昵称
 - avatar_path: 成员头像URL
@@ -588,9 +589,12 @@ GET请求：
 
 PUT请求：
 
+需要使用authorization头部携带JWT令牌。
+
+请求体为：
+
 ```json
 {
-    "user_email": "user_email",
     "group_id_": "group_id",
     "new_name": "newGroupName"
 }
@@ -624,9 +628,12 @@ PUT请求：
 
 DELETE请求：
 
+需要使用authorization头部携带JWT令牌。
+
+请求体为：
+
 ```json
 {
-    "user_email": "user_email",
     "group_id": "group_id"
 }
 ```
@@ -654,13 +661,17 @@ DELETE请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
 
-#### 组内成员管理/groups//members
+#### 组内成员管理/groups/members
 
 该API用于管理指定分组的成员，包括获取分组成员列表、添加分组成员、删除分组成员。
 
 ##### 获取分组成员列表
 
 GET请求：
+
+需要使用authorization头部携带JWT令牌。
+
+请求体为：
 
 ```json
 {
@@ -679,11 +690,13 @@ GET请求：
     "info": "success",
     "members": [
         {
+            "id": "user_id",
             "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
         },  
         {
+            "id": "user_id",
             "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
@@ -692,7 +705,8 @@ GET请求：
 }
 ```
 
-- members: 分组成员列表，包含成员的email、昵称、头像URL。
+- members: 分组成员列表，包含成员的id、email、昵称、头像URL。
+- id: 成员ID    
 - email: 成员邮箱
 - name: 成员昵称
 - avatar_path: 成员头像URL
@@ -716,12 +730,12 @@ POST请求：
 ```json
 {
     "group_id": "group_id",
-    "member_email": "target_email"
+    "member_id": "target_id"
 }
 ```
 
 - group_id: 添加分组成员的分组ID
-- member_email: 要添加的成员邮箱
+- member_id: 要添加的成员ID
 
 响应：
 请求成功时，设置状态码为200OK，返回添加分组成员成功的消息，成功响应格式为:
@@ -755,12 +769,12 @@ DELETE请求：
 ```json
 {
     "group_id": "group_id",
-    "member_email": "target_email"
+    "member_id": "target_id"
 }
 ```
 
 - group_id: 删除分组成员的分组ID
-- member_email: 要删除的成员邮箱
+- member_id: 要删除的成员ID
 
 响应：
 请求成功时，设置状态码为200OK，返回删除分组成员成功的消息，成功响应格式为:
@@ -791,15 +805,9 @@ DELETE请求：
 
 该API用于查看指定用户的好友列表。
 
-通过GET方式请求，请求体为：
+需要使用authorization头部携带JWT令牌。
 
-```json
-{
-    "user_email": "user_email"
-}
-```
-
-- user_email: 查看好友列表的用户ID
+无请求体
 
 响应：
 请求成功时，设置状态码为200OK，返回好友列表，成功响应格式为:
@@ -810,11 +818,13 @@ DELETE请求：
     "info": "success",
     "friends": [
         {
+            "id": "user_id",
             "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
         },  
         {
+            "id": "user_id",
             "email": "user_email",
             "name": "userName",
             "avatar_path": "AvatarUrl",
@@ -823,7 +833,8 @@ DELETE请求：
 }
 ```
 
-- friends: 好友列表，包含好友的email、昵称、头像URL。
+- friends: 好友列表，包含好友的id、email、昵称、头像URL。
+- id: 好友ID    
 - email: 好友邮箱
 - name: 好友昵称
 - avatar_path: 好友头像URL
@@ -840,7 +851,7 @@ DELETE请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若用户不存在，状态码404，错误码-1，错误信息"用户不存在"。
 
-#### 好友操作/friends/
+#### 好友操作/friends/{friend_id}
 
 该API用于操作指定好友，包括查看好友详情、删除好友，为好友分组操作。
 
@@ -848,15 +859,16 @@ DELETE请求：
 
 GET请求：
 
+需要使用authorization头部携带JWT令牌。
+
+请求体为：
+
 ```json
 {
-    "user_email": "user_email",
-    "friend_email": "friend_email"
+    "friend_id": "friend_id"
 }
 ```
-
-- user_email: 查看好友详情的用户email
-- friend_email: 查看好友详情的好友邮箱
+- friend_id: 查看好友详情的好友ID
 
 响应：
 请求成功时，设置状态码为200OK，返回好友详情，成功响应格式为:
@@ -865,6 +877,7 @@ GET请求：
 {
     "code": 0,
     "info": "success",
+    "id": "user_id",
     "email": "friend_email",
     "name": "userName",
     "avatar_path": "AvatarUrl",
@@ -882,6 +895,7 @@ GET请求：
 }
 ```
 
+- id: 好友ID    
 - email: 好友邮箱
 - name: 好友昵称
 - avatar_path: 好友头像URL
@@ -905,15 +919,16 @@ GET请求：
 
 DELETE请求：
 
+需要使用authorization头部携带JWT令牌。
+请求体为：
+
 ```json
 {
-    "user_email": "user_email",
-    "friend_email": "friend_email"
+    "friend_id": "friend_id"
 }
 ```
 
-- user_email: 删除好友的用户email
-- friend_email: 要删除的好友email
+- friend_id: 删除的好友ID
 
 响应：
 请求成功时，设置状态码为200OK，返回删除好友成功的消息，成功响应格式为:
@@ -943,16 +958,17 @@ DELETE请求：
 
 PUT请求：
 
+需要使用authorization头部携带JWT令牌。
+请求体为：
+
 ```json
 {
-    "user_email": "user_email",
-    "friend_email": "friend_email",
+    "friend_id": "friend_id",
     "group_id": "group_id"
 }
 ```
 
-- user_email: 操作好友的用户email
-- friend_email: 操作的好友email
+- friend_id: 操作的好友ID
 - group_id: 要添加到的分组ID
 
 响应：

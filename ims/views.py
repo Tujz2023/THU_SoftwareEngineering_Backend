@@ -1,6 +1,5 @@
 import json
 from django.http import HttpRequest, HttpResponse
-from django.db.models import Q
 from django.shortcuts import render
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -101,11 +100,11 @@ def account_info(req: HttpRequest):
         # email = req.GET.get("email")
         # email = require({"email": email}, "email", "string", err_msg="Missing or error type of [email]")
         return_data = {
-        "email": user.email,
-        "name": user.name,
-        "user_info": user.user_info,
-        "avatar_path": user.avatar.url if user.avatar else "",
-        "deleted": user.deleted,
+            "email": user.email,
+            "name": user.name,
+            "user_info": user.user_info,
+            "avatar_path": user.avatar.url if user.avatar else "",
+            "deleted": user.deleted,
         }
         return request_success(return_data)
     elif req.method == "PUT":
@@ -148,26 +147,18 @@ def search_users(req: HttpRequest):
     if req.method != "GET":
         return BAD_METHOD
     
-    query_email = req.GET.get("query_email", "")
+
     query_name = req.GET.get("query_name", "")
 
-    query_filter = Q() # 构造查询条件
-    if query_email.strip():  # 确保不为空
-        query_filter &= Q(email__icontains=query_email)
-    if query_name.strip():
-        query_filter &= Q(name__icontains=query_name)
-
-    else:
-        return request_failed(-7, "Missing or error type of [query_email] or [query_name]", 400)
-
     # 执行查询
-    users = User.objects.filter(query_filter, deleted=False)  # 只查询未注销用户
+    users = User.objects.filter(name = query_name, deleted=False)  # 只查询未注销用户
 
     if not users.exist():
         return request_failed(-1, "User not found or deleted", 404)
     
     result=[
         {
+            "user_id": user.id,
             "name": user.name,
             "email": user.email,
             "avatar_path": user.avatar.url if user.avatar else "",
@@ -192,14 +183,14 @@ def add_friend(req: HttpRequest):
     
     body = json.loads(req.body.decode("utf-8"))
 
-    user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
-    search_email = require(body, "search_email", "string", err_msg="Missing or error type of [search_email]")
+    user_email = payload["email"]
+    target_id = require(body, "target_id", "int", err_msg="Missing or error type of [target_id]")
     message = require(body, "message", "string", err_msg="Missing or error type of [message]")
 
     user_cur = User.objects.filter(email=user_email).first()
 
     # 验证被添加用户是否存在
-    user = User.objects.filter(email=search_email).first()
+    user = User.objects.filter(id=target_id).first()
     if not user:
         return request_failed(1, "User not found", 404)
     
@@ -242,13 +233,17 @@ def get_friend_requests(req: HttpRequest):
     if req.method != "GET":
         return BAD_METHOD
     
-    user_email = req.GET.get("user_email", "")
+    user_email = payload["email"]
+
+    cur_user_id = User.objects.filter(email=user_email).first().id
 
     friend_requests = Request.objects.filter(receiver__email=user_email).order_by("-time")  # 按申请时间降序排列
 
     # 构造返回的请求列表
     request_list = [
         {
+            "sender_user_id": req.sender.id,
+            "receiver_user_id": cur_user_id,
             "user_email": req.sender.email,
             "user_name": req.sender.name,
             "avatar_path": req.sender.avatar.url if req.sender.avatar else "",
@@ -275,11 +270,11 @@ def friend_request_handle(req: HttpRequest):
         return BAD_METHOD
     
     body = json.loads(req.body.decode("utf-8"))
-    sender_user_email = require(body, "sender_user_email", "string", err_msg="Missing or error type of [sender_user_email]")
-    receiver_user_email = require(body, "receiver_user_email", "string", err_msg="Missing or error type of [receiver_user_email]")
+    sender_user_id = require(body, "sender_user_id", "int", err_msg="Missing or error type of [sender_user_id]")
+    receiver_user_id = require(body, "receiver_user_id", "int", err_msg="Missing or error type of [receiver_user_id]")
 
-    sender = User.objects.filter(email=sender_user_email, deleted=False).first()
-    receiver = User.objects.filter(email=receiver_user_email, deleted=False).first()
+    sender = User.objects.filter(id=sender_user_id).first()
+    receiver = User.objects.filter(id=receiver_user_id).first()
 
     if not receiver:
         return request_failed(-1, "User deleted", 404)
@@ -320,7 +315,7 @@ def groups(req: HttpRequest):
         return BAD_METHOD
     # 获取群组列表
     if req.method == "GET":
-        user_email = req.GET.get("user_email", "")
+        user_email = payload["email"]
         groups = Group.objects.filter(owner__email=user_email)
         group_list = [
             {
@@ -333,8 +328,8 @@ def groups(req: HttpRequest):
 
     # 创建群组
     elif req.method == "POST":
+        user_email = payload["email"]
         body = json.loads(req.body.decode("utf-8"))
-        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
         name = require(body, "name", "string", err_msg="Missing or error type of [name]")
 
         existing_group = Group.objects.filter(owner__email=user_email, name=name).first()
@@ -368,6 +363,7 @@ def manage_groups(req: HttpRequest):
         
         group_members = [
             {
+                "id": member.id,
                 "email": member.email,
                 "name": member.name,
                 "avatar_path": member.avatar.url if member.avatar else "",
@@ -386,7 +382,7 @@ def manage_groups(req: HttpRequest):
     # 修改分组名称
     elif req.method == "PUT":
         body = json.loads(req.body.decode("utf-8"))
-        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
+        user_email = payload["email"]
         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
         new_name = require(body, "new_name", "string", err_msg="Missing or error type of [new_name]")
 
@@ -405,8 +401,8 @@ def manage_groups(req: HttpRequest):
     
     # 删除分组
     elif req.method == "DELETE":
+        user_email = payload["email"]
         body = json.loads(req.body.decode("utf-8"))
-        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
 
         group = Group.objects.filter(id=group_id).first()
@@ -438,6 +434,7 @@ def manage_group_members(req: HttpRequest):
         
         group_members = [
             {
+                "id": member.id,
                 "email": member.email,
                 "name": member.name,
                 "avatar_path": member.avatar.url if member.avatar else "",
@@ -451,17 +448,17 @@ def manage_group_members(req: HttpRequest):
     elif req.method == "POST":
         body = json.loads(req.body.decode("utf-8"))
         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
-        member_email = require(body, "member_email", "string", err_msg="Missing or error type of [member_email]")
+        member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
 
         group = Group.objects.filter(id=group_id).first()
         if not group:
             return request_failed(-1, "Group not found", 404)
         
-        member = User.objects.filter(email=member_email).first()
+        member = User.objects.filter(id=member_id).first()
         if not member:
             return request_failed(-1, "Member not found", 404)
         
-        if group.members.filter(email=member_email).exists():
+        if group.members.filter(id=member_id).exists():
             return request_failed(-3, "Member already in group", 400)
         
         group.members.add(member)
@@ -472,17 +469,17 @@ def manage_group_members(req: HttpRequest):
     elif req.method == "DELETE":
         body = json.loads(req.body.decode("utf-8"))
         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
-        member_email = require(body, "member_email", "string", err_msg="Missing or error type of [member_email]")
+        member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
 
         group = Group.objects.filter(id=group_id).first()
         if not group:
             return request_failed(-1, "Group not found", 404)
         
-        member = User.objects.filter(email=member_email).first()
+        member = User.objects.filter(id=member_id).first()
         if not member:
             return request_failed(-1, "Member not found", 404)
         
-        if not group.members.filter(email=member_email).exists():
+        if not group.members.filter(id=member_id).exists():
             return request_failed(-3, "Member not in group", 400)
         
         group.members.remove(member)
@@ -502,7 +499,7 @@ def get_friends_list(req: HttpRequest):
     if req.method != "GET":
         return BAD_METHOD
     
-    user_email = req.GET.get("user_email", "")
+    user_email = payload["email"]
 
     # 从对话中获取好友列表中好友的email列表
     friends_emails = (
@@ -516,6 +513,7 @@ def get_friends_list(req: HttpRequest):
 
     friends_list = [
         {
+            "id": friend.id,
             "email": friend.email,
             "name": friend.name,
             "avatar_path": friend.avatar.url if friend.avatar else "",
@@ -540,20 +538,21 @@ def manage_friends(req: HttpRequest):
     
     # 查看好友详情
     if req.method == "GET":
-        user_email = req.GET.get("user_email", "")
-        friend_email = req.GET.get("friend_email", "")
+        user_email = payload["email"]
+        friend_id = req.GET.get("friend_id", "")
 
         user = User.objects.filter(email=user_email).first()
         if not user:
             return request_failed(-1, "User not found", 404)
         
-        friend = User.objects.filter(email=friend_email).first()
+        friend = User.objects.filter(id=friend_id).first()
         if not friend:
             return request_failed(-1, "Friend not found", 404)
         
         friend_groups = Group.objects.filter(members=friend)
         
         return_data = {
+            "id": friend.id,
             "email": friend.email,
             "name": friend.name,
             "avatar_path": friend.avatar.url if friend.avatar else "",
@@ -572,14 +571,14 @@ def manage_friends(req: HttpRequest):
     # 删除好友
     elif req.method == "DELETE":
         body = json.loads(req.body.decode("utf-8"))
-        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
-        friend_email = require(body, "friend_email", "string", err_msg="Missing or error type of [friend_email]")
+        user_email = payload["email"]
+        friend_id = require(body, "friend_id", "int", err_msg="Missing or error type of [friend_id]")
 
         user = User.objects.filter(email=user_email).first()
         if not user:
             return request_failed(-1, "User not found", 404)
         
-        friend = User.objects.filter(email=friend_email).first()
+        friend = User.objects.filter(id=friend_id).first()
         if not friend:
             return request_failed(-1, "Friend not found", 404)
         
@@ -594,15 +593,15 @@ def manage_friends(req: HttpRequest):
     # 好友分组操作
     elif req.method == "PUT":
         body = json.loads(req.body.decode("utf-8"))
-        user_email = require(body, "user_email", "string", err_msg="Missing or error type of [user_email]")
-        friend_email = require(body, "friend_email", "string", err_msg="Missing or error type of [friend_email]")
+        user_email = payload["email"]
+        friend_id = require(body, "friend_id", "int", err_msg="Missing or error type of [friend_id]")
         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
 
         user = User.objects.filter(email=user_email).first()
         if not user:
             return request_failed(-1, "User not found", 404)
         
-        friend = User.objects.filter(email=friend_email).first()
+        friend = User.objects.filter(id=friend_id).first()
         if not friend:
             return request_failed(-1, "Friend not found", 404)
         
@@ -610,7 +609,7 @@ def manage_friends(req: HttpRequest):
         if not group:
             return request_failed(-1, "Group not found", 404)
         
-        if group.members.filter(email=friend_email).exists():
+        if group.members.filter(id = friend.id).exists():   
             return request_failed(-3, "Friend already in group", 400)
         
         group.members.add(friend)
@@ -665,12 +664,15 @@ def message(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401) 
-    cur_user = User.objects.filter(email=payload["email"]).first()
-    if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
-        return request_failed(1, "Not in conversation", 400)
+    # cur_user = User.objects.filter(email=payload["email"]).first()
+    # if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+    #     return request_failed(1, "Not in conversation", 400)
     body = json.loads(req.body.decode("utf-8"))
     conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
     conv = Conversation.objects.filter(id=conv_id).first()
+    cur_user = User.objects.filter(email=payload["email"]).first()
+    if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+        return request_failed(1, "Not in conversation", 400)
     if not conv:
         return request_failed(-1, "Conversation not found", 404)
 
