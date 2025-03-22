@@ -11,7 +11,7 @@ class User(models.Model):
     password = models.CharField(max_length=MAX_CHAR_LENGTH) # 加密后的密码
     created_time = models.FloatField(default=utils_time.get_timestamp)
     user_info = models.CharField(max_length=MAX_CHAR_LENGTH, default="该用户很懒，什么也没有留下~")
-    avatar = models.ImageField(upload_to='avatar/user/')
+    avatar = models.ImageField(upload_to='avatar/user/', blank=True, null=True)
     deleted = models.BooleanField(default=False)
     
     class Meta:
@@ -46,7 +46,7 @@ class Conversation(models.Model):
     members = models.ManyToManyField(User)
     ConvName = models.CharField(max_length=MAX_CHAR_LENGTH, default="群组")
     created_time = models.FloatField(default=utils_time.get_timestamp)
-    avatar = models.ImageField(upload_to='avatar/conversation/')
+    avatar = models.ImageField(upload_to='avatar/conversation/', blank=True, null=True)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="creator")
     managers = models.ManyToManyField(User, related_name="managers")
     last_message_id = models.IntegerField(default=-1)

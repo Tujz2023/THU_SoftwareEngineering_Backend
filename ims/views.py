@@ -2,6 +2,7 @@ import json
 from django.http import HttpRequest, HttpResponse
 from django.db.models import Q
 from django.shortcuts import render
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from ims.models import User
 from ims.models import Conversation, User, Message, Request, Invitation, Group, Interface
@@ -103,7 +104,6 @@ def account_info(req: HttpRequest):
         "email": user.email,
         "name": user.name,
         "user_info": user.user_info,
-        "avatar_path": user.avatar,
         "avatar_path": user.avatar.url if user.avatar else "",
         "deleted": user.deleted,
         }
@@ -124,7 +124,8 @@ def account_info(req: HttpRequest):
         else:
             user.email = newemail
         user.user_info = require(body, "user_info", "string", err_msg="Missing or error type of [user_info]")
-        user.avatar = require(body, "avatar_path", "string", err_msg="Missing or error type of [avatar_path]")
+        _avatar_path = require(body, "avatar_path", "string", err_msg="Missing or error type of [avatar_path]")
+        user.avatar = SimpleUploadedFile(name=str(user.id), content=open(_avatar_path, 'rb').read(), content_type='image/jpeg')
         user.save()
         if invalid_email:
             return request_failed(1, "Invalid email", 400)
