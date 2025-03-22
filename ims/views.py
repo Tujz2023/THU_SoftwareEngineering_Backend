@@ -54,9 +54,11 @@ def register(req: HttpRequest):
         return request_failed(-4, "Password illegal", 400)
     if user is not None:
         if user.deleted:
+            if user.password != password:
+                return request_failed(-3, "Wrong password", 401)
             user.deleted = False
             user.save()
-            return request_success({"message": "已恢复账户，请用原密码登录"})
+            return request_success({"message": "已恢复账户"})
         return request_failed(-1, "User already exists", 400)
     else:
         user = User(email=email, name=name, password=password)
@@ -84,19 +86,24 @@ def delete(req: HttpRequest):
 
 @CheckRequire 
 def account_info(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(2, "Invalid or expired JWT", status_code=401) 
+    user = User.objects.filter(email=payload["email"]).first()
+    # if jwt is valid, user must exist
     if req.method == "GET":
         # body = json.loads(req.body.decode("utf-8"))
         # email = require(body, "email", "string", err_msg="Missing or error type of [email]")
-        email = req.GET.get("email")
-        email = require({"email": email}, "email", "string", err_msg="Missing or error type of [email]")
-        user = User.objects.filter(email=email).first()
-        if user is None:
-            return request_failed(-1, "用户不存在", 404)
+        # email = req.GET.get("email")
+        # email = require({"email": email}, "email", "string", err_msg="Missing or error type of [email]")
         return_data = {
         "email": user.email,
         "name": user.name,
         "user_info": user.user_info,
-        # "avatar_path": user.avatar,
+        "avatar_path": user.avatar,
         "avatar_path": user.avatar.url if user.avatar else "",
         "deleted": user.deleted,
         }
@@ -104,13 +111,7 @@ def account_info(req: HttpRequest):
     elif req.method == "PUT":
         invalid_email = False
         invalid_name = False
-        jwt_token = req.headers.get("Authorization")
-        if jwt_token == None or jwt_token == "":
-            return request_failed(2, "Invalid or expired JWT", status_code=401)
-        payload = check_jwt_token(jwt_token)
-        if payload is None:
-            return request_failed(2, "Invalid or expired JWT", status_code=401) 
-        user = User.objects.filter(email=payload["email"]).first()
+
         body = json.loads(req.body.decode("utf-8"))
         newname = require(body, "name", "string", err_msg="Missing or error type of [name]")
         if len(newname) > 20 or newname == "":
