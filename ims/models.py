@@ -5,7 +5,8 @@ from utils.utils_request import return_field
 from utils.utils_require import MAX_CHAR_LENGTH
 
 class User(models.Model):
-    email = models.EmailField(primary_key=True, unique=True)
+    id = models.BigAutoField(primary_key=True, unique=True)
+    email = models.EmailField(unique=True)
     name = models.CharField(max_length=MAX_CHAR_LENGTH)
     password = models.CharField(max_length=MAX_CHAR_LENGTH) # 加密后的密码
     created_time = models.FloatField(default=utils_time.get_timestamp)
@@ -14,10 +15,11 @@ class User(models.Model):
     deleted = models.BooleanField(default=False)
     
     class Meta:
-        indexes = [models.Index(fields=["email"])]
+        indexes = [models.Index(fields=["id"])]
 
     def serialize(self):
         return {
+            "id": self.id,
             "name": self.name, 
             "email": self.email, 
             "avatar": self.avatar.url,
@@ -77,7 +79,7 @@ class Interface(models.Model):
         indexes = [models.Index(fields=["id"])]
 
     def __str__(self) -> str:
-        return f"interface {self.id} of user {self.user.email} in conversation {self.conv.id}"
+        return f"interface {self.id} of user {self.user.id} in conversation {self.conv.id}"
 
 class Message(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
@@ -145,9 +147,9 @@ class Group(models.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "owner": self.owner.email,
-            "members": [member.email for member in self.members.all()],
+            "owner": self.owner.id,
+            "members": [member.id for member in self.members.all()],
         }
 
     def __str__(self):
-        return f"Group {self.name} (ID: {self.id}) - Owner: {self.owner.email}"
+        return f"Group {self.name} (ID: {self.id}) - Owner: {self.owner.id}"
