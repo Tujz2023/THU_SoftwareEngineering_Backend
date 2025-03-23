@@ -124,25 +124,37 @@ def account_info(req: HttpRequest):
     elif req.method == "PUT":
         invalid_email = False
         invalid_name = False
+        invalid_pass = False
 
         body = json.loads(req.body.decode("utf-8"))
-        newname = require(
-            body, "name", "string", err_msg="Missing or error type of [name]"
-        )
-        if len(newname) > 20 or newname == "":
-            invalid_name = True
-        else:
-            user.name = newname
-        newemail = require(
-            body, "email", "string", err_msg="Missing or error type of [email]"
-        )
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", newemail):
-            invalid_email = True
-        else:
-            user.email = newemail
-        user.user_info = require(
-            body, "user_info", "string", err_msg="Missing or error type of [user_info]"
-        )
+        if "name" in body:
+            newname = require(
+                body, "name", "string", err_msg="Missing or error type of [name]"
+            )
+            if len(newname) > 20 or newname == "":
+                invalid_name = True
+            else:
+                user.name = newname
+        if "email" in body:
+            newemail = require(
+                body, "email", "string", err_msg="Missing or error type of [email]"
+            )
+            if not re.match(r"[^@]+@[^@]+\.[^@]+", newemail):
+                invalid_email = True
+            else:
+                user.email = newemail
+        if "password" in body:
+            newpassword = require(
+                body, "password", "string", err_msg="Missing or error type of [password]"
+            )
+            if not re.match(r"^[a-zA-Z0-9_]{1,20}$", newpassword):
+                invalid_pass = True
+            user.password = newpassword
+
+        if "user_info" in body:
+            user.user_info = require(
+                body, "user_info", "string", err_msg="Missing or error type of [user_info]"
+            )
         if "avatar_path" in body:
             _avatar_path = require(
                 body,
@@ -158,8 +170,10 @@ def account_info(req: HttpRequest):
         user.save()
         if invalid_email:
             return request_failed(1, "Invalid email", 400)
-        elif invalid_name:
+        if invalid_name:
             return request_failed(-3, "Name too long", 400)
+        if invalid_pass:
+            return request_failed(-4, "Invalid password", 400)
         return request_success({"message": "修改成功"})
     else:
         return BAD_METHOD
