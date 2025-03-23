@@ -200,9 +200,17 @@ class ImsTests(TestCase):
         self.assertEqual(res.json()['code'], 0)
         self.assertEqual(res.json()['deleted'], True)
 
+    def test_info_wrong_password(self):
+        headers = self.generate_header(self.holder_id)
+        data = {"origin_password": "123", "name": "newTujz", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
+        res = self.client.put('/account/info', data=data, content_type='application/json', **headers)
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(res.json()['code'], -3)
+        self.assertEqual(User.objects.filter(id=self.holder_id).first().email, "tujz23@mails.tsinghua.edu.cn")
+
     def test_info_modify_info(self):
         headers = self.generate_header(self.holder_id)
-        data = {"name": "newTujz", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
+        data = {"origin_password": "123456", "name": "newTujz", "password": "654321", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
         res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -211,11 +219,12 @@ class ImsTests(TestCase):
         self.assertEqual(modify_info.email, "tujz24@mails.tsinghua.edu.cn")
         self.assertEqual(modify_info.name, "newTujz")
         self.assertEqual(modify_info.user_info, "new user info")
+        self.assertEqual(modify_info.password, "654321")
         self.assertEqual(modify_info.deleted, False)
         # 验证tujz23@mails.tsinghua.edu.cn没了
         self.assertTrue(User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").exists() == False)
         # 改回来
-        data = {"name": "tujz", "email": "tujz23@mails.tsinghua.edu.cn", "user_info": "tujz's account"}
+        data = {"origin_password": "654321", "password": "123456", "name": "tujz", "email": "tujz23@mails.tsinghua.edu.cn", "user_info": "tujz's account"}
         headers = self.generate_header(self.holder_id)
         res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
         self.assertEqual(res.status_code, 200)
