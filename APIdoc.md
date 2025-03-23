@@ -167,14 +167,18 @@ PUT请求：
 
 ```json
 {
+    "origin_password": "origin_password",
     "name": "newUserName",
+    "password": "newpassword",
     "email": "newUserEmail",
     "user_info": "newUserInfo",
     "avatar_path": "newUserAvatarUrl"
 }
 ```
 
+- origin_password: 用户输入的原密码
 - name: 用户昵称
+- password: 用户密码
 - email: 用户邮箱
 - user_info: 用户信息
 - avatar_path: 用户头像URL
@@ -198,9 +202,11 @@ PUT请求：
 }
 ```
 
+- 若用户输入的原密码无法匹配，状态码401，错误码-3，错误信息"密码错误"。
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若用户邮箱格式错误，状态码400，错误码1，错误信息"Invalid email"。
 - 若用户昵称不符合要求，状态码400，错误码-3，错误信息"Name too long"。
+- 若用户密码不符合要求，状态码400，错误码-4，错误信息"Invalid password"
 
 ### 好友关系
 

@@ -127,6 +127,10 @@ def account_info(req: HttpRequest):
         invalid_pass = False
 
         body = json.loads(req.body.decode("utf-8"))
+        origin_password = body["origin_password"]
+        if origin_password != user.password:
+            return request_failed(-3, "密码错误", 401)
+
         if "name" in body:
             newname = require(
                 body, "name", "string", err_msg="Missing or error type of [name]"
