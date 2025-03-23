@@ -4,24 +4,40 @@ from django.shortcuts import render
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from ims.models import User
-from ims.models import Conversation, User, Message, Request, Invitation, Group, Interface
-from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
+from ims.models import (
+    Conversation,
+    User,
+    Message,
+    Request,
+    Invitation,
+    Group,
+    Interface,
+)
+from utils.utils_request import (
+    BAD_METHOD,
+    request_failed,
+    request_success,
+    return_field,
+)
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from utils.utils_jwt import generate_jwt_token, check_jwt_token
 import re
 
+
 @CheckRequire
 def login(req: HttpRequest):
     if req.method != "POST":
         return BAD_METHOD
-    
+
     body = json.loads(req.body.decode("utf-8"))
-    
+
     email = require(body, "email", "string", err_msg="Missing or error type of [email]")
     if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
         return request_failed(1, "Invalid email", 400)
-    password = require(body, "password", "string", err_msg="Missing or error type of [password]")
+    password = require(
+        body, "password", "string", err_msg="Missing or error type of [password]"
+    )
     user = User.objects.filter(email=email).first()
     if user is None:
         return request_failed(-1, "User not found", 404)
@@ -30,12 +46,11 @@ def login(req: HttpRequest):
     elif user.password != password:
         return request_failed(-3, "Wrong password", 401)
     # checking success or new user
-    return_data = {
-            "token": generate_jwt_token(user.id)
-        }
-    return request_success(return_data) # msg: Succeed.
+    return_data = {"token": generate_jwt_token(user.id)}
+    return request_success(return_data)  # msg: Succeed.
 
-@CheckRequire 
+
+@CheckRequire
 def register(req: HttpRequest):
     if req.method != "POST":
         return BAD_METHOD
@@ -46,7 +61,9 @@ def register(req: HttpRequest):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return request_failed(1, "Invalid email", 400)
     user = User.objects.filter(email=email).first()
-    password = require(body, "password", "string", err_msg="Missing or error type of [password]")
+    password = require(
+        body, "password", "string", err_msg="Missing or error type of [password]"
+    )
     name = require(body, "name", "string", err_msg="Missing or error type of [name]")
     if len(name) > 20 or name == "":
         return request_failed(-3, "Name too long", 400)
@@ -58,40 +75,41 @@ def register(req: HttpRequest):
                 return request_failed(-3, "Wrong password", 401)
             user.deleted = False
             user.save()
-            return request_success({"message": "已恢复账户"})
+            return request_success(
+                {"token": generate_jwt_token(user.id), "message": "已恢复账户"}
+            )
         return request_failed(-1, "User already exists", 400)
     else:
         user = User(email=email, name=name, password=password)
         user.save()
-        return_data = {
-            "token": generate_jwt_token(user.id),
-            "message": "注册成功"
-        }
+        return_data = {"token": generate_jwt_token(user.id), "message": "注册成功"}
         return request_success(return_data)
+
 
 @CheckRequire
 def delete(req: HttpRequest):
     if req.method != "DELETE":
-        return BAD_METHOD    
+        return BAD_METHOD
     jwt_token = req.headers.get("Authorization")
     if jwt_token == None or jwt_token == "":
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     payload = check_jwt_token(jwt_token)
     if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     user = User.objects.filter(id=payload["id"]).first()
     user.deleted = True
     user.save()
     return request_success({"message": "注销成功"})
 
-@CheckRequire 
+
+@CheckRequire
 def account_info(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if jwt_token == None or jwt_token == "":
         return request_failed(2, "Invalid or expired JWT", status_code=401)
     payload = check_jwt_token(jwt_token)
     if payload is None:
-        return request_failed(2, "Invalid or expired JWT", status_code=401) 
+        return request_failed(2, "Invalid or expired JWT", status_code=401)
     user = User.objects.filter(id=payload["id"]).first()
     # if jwt is valid, user must exist
     if req.method == "GET":
@@ -108,20 +126,35 @@ def account_info(req: HttpRequest):
         invalid_name = False
 
         body = json.loads(req.body.decode("utf-8"))
-        newname = require(body, "name", "string", err_msg="Missing or error type of [name]")
+        newname = require(
+            body, "name", "string", err_msg="Missing or error type of [name]"
+        )
         if len(newname) > 20 or newname == "":
             invalid_name = True
         else:
             user.name = newname
-        newemail = require(body, "email", "string", err_msg="Missing or error type of [email]")
+        newemail = require(
+            body, "email", "string", err_msg="Missing or error type of [email]"
+        )
         if not re.match(r"[^@]+@[^@]+\.[^@]+", newemail):
             invalid_email = True
         else:
             user.email = newemail
-        user.user_info = require(body, "user_info", "string", err_msg="Missing or error type of [user_info]")
+        user.user_info = require(
+            body, "user_info", "string", err_msg="Missing or error type of [user_info]"
+        )
         if "avatar_path" in body:
-            _avatar_path = require(body, "avatar_path", "string", err_msg="Missing or error type of [avatar_path]")
-            user.avatar = SimpleUploadedFile(name=str(user.id), content=open(_avatar_path, 'rb').read(), content_type='image/jpeg')
+            _avatar_path = require(
+                body,
+                "avatar_path",
+                "string",
+                err_msg="Missing or error type of [avatar_path]",
+            )
+            user.avatar = SimpleUploadedFile(
+                name=str(user.id),
+                content=open(_avatar_path, "rb").read(),
+                content_type="image/jpeg",
+            )
         user.save()
         if invalid_email:
             return request_failed(1, "Invalid email", 400)
@@ -130,57 +163,58 @@ def account_info(req: HttpRequest):
         return request_success({"message": "修改成功"})
     else:
         return BAD_METHOD
-    
+
+
 @CheckRequire
 def search_users(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if not jwt_token:
         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
     if req.method != "GET":
         return BAD_METHOD
-    
 
     query_name = req.GET.get("query_name", "")
     if query_name == "":
         return request_failed(-7, "Missing or error type of [query_name]", 400)
 
     # 执行查询
-    users = User.objects.filter(name = query_name, deleted=False)  # 只查询未注销用户
+    users = User.objects.filter(name=query_name, deleted=False)  # 只查询未注销用户
 
     if not users.exists():
         return request_failed(-1, "User not found or deleted", 404)
-    
-    result=[
+
+    result = [
         {
             "user_id": user.id,
             "name": user.name,
             "email": user.email,
             "avatar_path": user.avatar.url if user.avatar else "",
-            "deleted": user.deleted
+            "deleted": user.deleted,
         }
         for user in users
     ]
 
     return request_success({"results": result})
-    
+
+
 # @CheckRequire
 # def add_friend(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method != "POST":
 #         return BAD_METHOD
-    
+
 #     body = json.loads(req.body.decode("utf-8"))
 
 #     user_email = User.objects.filter(id=payload["id"]).first().email
@@ -193,7 +227,7 @@ def search_users(req: HttpRequest):
 #     user = User.objects.filter(id=target_id).first()
 #     if not user:
 #         return request_failed(1, "User not found", 404)
-    
+
 #     # 验证当前用户是否已经是好友（通过会话conversation来判断是否为好友）
 #     existing_conversation = Conversation.objects.filter(
 #         type=0  # 私聊类型
@@ -209,7 +243,7 @@ def search_users(req: HttpRequest):
 
 #     if existing_request:
 #         return request_failed(-5, "Friend request already sent", 403)
-    
+
 #     new_request = Request(
 #         sender=user_cur,
 #         receiver=user,
@@ -225,14 +259,14 @@ def search_users(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method != "GET":
 #         return BAD_METHOD
-    
+
 #     user_email = User.objects.filter(id=payload["id"]).first().email
 
 #     cur_user_id = User.objects.filter(email=user_email).first().id
@@ -261,14 +295,14 @@ def search_users(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method not in ["POST", "DELETE"]:
 #         return BAD_METHOD
-    
+
 #     body = json.loads(req.body.decode("utf-8"))
 #     sender_user_id = require(body, "sender_user_id", "int", err_msg="Missing or error type of [sender_user_id]")
 #     receiver_user_id = require(body, "receiver_user_id", "int", err_msg="Missing or error type of [receiver_user_id]")
@@ -299,18 +333,18 @@ def search_users(req: HttpRequest):
 #         request.save()
 
 #         return request_success({"message": "已拒绝该好友申请"})
-    
+
 
 # @CheckRequire
 # def groups(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method not in ["GET", "POST"]:
 #         return BAD_METHOD
 #     # 获取群组列表
@@ -335,7 +369,7 @@ def search_users(req: HttpRequest):
 #         existing_group = Group.objects.filter(owner__email=user_email, name=name).first()
 #         if existing_group:
 #             return request_failed(-1, "Group already exists", 400)
-        
+
 #         new_group = Group.objects.create(owner_id=user_email, name=name)
 #         new_group.save()
 
@@ -346,21 +380,21 @@ def search_users(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method not in ["GET", "PUT", "DELETE"]:
 #         return BAD_METHOD
-    
+
 #     # 查看分组详情
 #     if req.method == "GET":
 #         group_id = req.GET.get("group_id", "")
 #         group = Group.objects.filter(id=int(group_id)).first()
 #         if not group:
 #             return request_failed(-1, "Group not found", 404)
-        
+
 #         group_members = [
 #             {
 #                 "id": member.id,
@@ -378,7 +412,7 @@ def search_users(req: HttpRequest):
 #         }
 
 #         return request_success({"group": result})
-    
+
 #     # 修改分组名称
 #     elif req.method == "PUT":
 #         body = json.loads(req.body.decode("utf-8"))
@@ -393,12 +427,12 @@ def search_users(req: HttpRequest):
 #         group = Group.objects.filter(id=group_id).first()
 #         if not group:
 #             return request_failed(-1, "Group not found", 404)
-        
+
 #         group.name = new_name
 #         group.save()
 
 #         return request_success({"message": "修改分组名称成功"})
-    
+
 #     # 删除分组
 #     elif req.method == "DELETE":
 #         user_email = User.objects.filter(id=payload["id"]).first().email
@@ -408,7 +442,7 @@ def search_users(req: HttpRequest):
 #         group = Group.objects.filter(id=group_id).first()
 #         if not group:
 #             return request_failed(-1, "Group not found", 404)
-        
+
 #         group.delete()
 
 
@@ -417,21 +451,21 @@ def search_users(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method not in ["GET", "POST", "DELETE"]:
 #         return BAD_METHOD
-    
+
 #     # 查看分组成员列表
 #     if req.method == "GET":
 #         group_id = req.GET.get("group_id", "")
 #         group = Group.objects.filter(id=int(group_id)).first()
 #         if not group:
 #             return request_failed(-1, "Group not found", 404)
-        
+
 #         group_members = [
 #             {
 #                 "id": member.id,
@@ -443,7 +477,7 @@ def search_users(req: HttpRequest):
 #         ]
 
 #         return request_success({"members": group_members})
-    
+
 #     # 添加分组成员
 #     elif req.method == "POST":
 #         body = json.loads(req.body.decode("utf-8"))
@@ -453,18 +487,18 @@ def search_users(req: HttpRequest):
 #         group = Group.objects.filter(id=group_id).first()
 #         if not group:
 #             return request_failed(-1, "Group not found", 404)
-        
+
 #         member = User.objects.filter(id=member_id).first()
 #         if not member:
 #             return request_failed(-1, "Member not found", 404)
-        
+
 #         if group.members.filter(id=member_id).exists():
 #             return request_failed(-3, "Member already in group", 400)
-        
+
 #         group.members.add(member)
 
 #         return request_success({"message": "添加分组成员成功"})
-    
+
 #     # 删除分组成员
 #     elif req.method == "DELETE":
 #         body = json.loads(req.body.decode("utf-8"))
@@ -474,16 +508,15 @@ def search_users(req: HttpRequest):
 #         group = Group.objects.filter(id=group_id).first()
 #         if not group:
 #             return request_failed(-1, "Group not found", 404)
-        
+
 #         member = User.objects.filter(id=member_id).first()
 #         if not member:
 #             return request_failed(-1, "Member not found", 404)
-        
+
 #         if not group.members.filter(id=member_id).exists():
 #             return request_failed(-3, "Member not in group", 400)
-        
-#         group.members.remove(member)
 
+#         group.members.remove(member)
 
 
 # @CheckRequire
@@ -491,14 +524,14 @@ def search_users(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method != "GET":
 #         return BAD_METHOD
-    
+
 #     user_email = User.objects.filter(id=payload["id"]).first().email
 
 #     # 从对话中获取好友列表中好友的email列表
@@ -506,7 +539,7 @@ def search_users(req: HttpRequest):
 #         Conversation.objects.filter(type=0).filter(members__email=user_email)
 #         .values_list("members__email", flat=True)
 #         .exclude(members__email=user_email)  # 排除自己
-#         .distinct()  # 避免重复 
+#         .distinct()  # 避免重复
 #     )
 
 #     friends = User.objects.filter(email__in=friends_emails)
@@ -528,14 +561,14 @@ def search_users(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if not jwt_token:
 #         return request_failed(-2, "Invalid or expired JWT", 401)
-    
+
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    
+
 #     if req.method not in ["GET", "PUT", "DELETE"]:
 #         return BAD_METHOD
-    
+
 #     # 查看好友详情
 #     if req.method == "GET":
 #         user_email = payload["email"]
@@ -544,13 +577,13 @@ def search_users(req: HttpRequest):
 #         user = User.objects.filter(email=user_email).first()
 #         if not user:
 #             return request_failed(-1, "User not found", 404)
-        
+
 #         friend = User.objects.filter(id=friend_id).first()
 #         if not friend:
 #             return request_failed(-1, "Friend not found", 404)
-        
+
 #         friend_groups = Group.objects.filter(members=friend)
-        
+
 #         return_data = {
 #             "id": friend.id,
 #             "email": friend.email,
@@ -567,7 +600,7 @@ def search_users(req: HttpRequest):
 #         }
 
 #         return request_success(return_data)
-    
+
 #     # 删除好友
 #     elif req.method == "DELETE":
 #         body = json.loads(req.body.decode("utf-8"))
@@ -577,11 +610,11 @@ def search_users(req: HttpRequest):
 #         user = User.objects.filter(email=user_email).first()
 #         if not user:
 #             return request_failed(-1, "User not found", 404)
-        
+
 #         friend = User.objects.filter(id=friend_id).first()
 #         if not friend:
 #             return request_failed(-1, "Friend not found", 404)
-        
+
 #         Conversation.objects.filter(type=0).filter(members=user).filter(members=friend).delete()
 
 #         # 删除好友之间的请求
@@ -589,7 +622,7 @@ def search_users(req: HttpRequest):
 #         Request.objects.filter(sender=friend, receiver=user).delete()
 
 #         return request_success({"message": "删除好友成功"})
-    
+
 #     # 好友分组操作
 #     elif req.method == "PUT":
 #         body = json.loads(req.body.decode("utf-8"))
@@ -600,22 +633,22 @@ def search_users(req: HttpRequest):
 #         user = User.objects.filter(email=user_email).first()
 #         if not user:
 #             return request_failed(-1, "User not found", 404)
-        
+
 #         friend = User.objects.filter(id=friend_id).first()
 #         if not friend:
 #             return request_failed(-1, "Friend not found", 404)
-        
+
 #         group = Group.objects.filter(id=group_id).first()
 #         if not group:
 #             return request_failed(-1, "Group not found", 404)
-        
-#         if group.members.filter(id = friend.id).exists():   
+
+#         if group.members.filter(id = friend.id).exists():
 #             return request_failed(-3, "Friend already in group", 400)
-        
+
 #         group.members.add(friend)
 
 #         return request_success({"message": "添加好友到分组成功"})
-        
+
 # @CheckRequire
 # def conv(req: HttpRequest):
 #     if req.method not in ["GET", "POST"]:
@@ -626,7 +659,7 @@ def search_users(req: HttpRequest):
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 #     cur_user = User.objects.filter(email=payload["email"]).first()
 
 #     if req.method == "GET":
@@ -663,7 +696,7 @@ def search_users(req: HttpRequest):
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 #     # cur_user = User.objects.filter(email=payload["email"]).first()
 #     # if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
 #     #     return request_failed(1, "Not in conversation", 400)
@@ -690,14 +723,14 @@ def search_users(req: HttpRequest):
 #         messages = Message.objects.filter(conversation=conv).order_by("time")
 #         return request_success({"messages": [msg.serialize() for msg in messages]})
 
-# @CheckRequire 
+# @CheckRequire
 # def interface(req: HttpRequest):
 #     jwt_token = req.headers.get("Authorization")
 #     if jwt_token == None or jwt_token == "":
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401) 
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 #     cur_user = User.objects.filter(email=payload["email"]).first()
 
 #     conversation_id = req.GET.get("conversation_id", "")
@@ -731,4 +764,3 @@ def search_users(req: HttpRequest):
 #         return request_success()
 #     else:
 #         return BAD_METHOD
-    

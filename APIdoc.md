@@ -46,7 +46,7 @@ POST请求
 - 若用户昵称不符合要求，状态码400，错误码-3，错误信息"Name too long"。
 - 若用户已存在，状态码400，错误码-1，错误信息"User already exists"。
 - 若用户密码不符合要求，状态码400，错误码-4，错误信息"Password illegal"。
-- 如果用户恢复，状态码200，返回信息"已恢复账户，请用原密码登录"。
+- 如果用户用原密码恢复，状态码200，返回信息"已恢复账户"，并携带JWTtoken。
 
 #### 用户注销/account/delete
 
@@ -454,7 +454,7 @@ GET请求：
 使用authorization头部携带JWT令牌。
 无请求体
 
-响应：  
+响应：
 请求成功时，设置状态码为200OK，返回分组名单，成功响应格式为:
 
 ```json
@@ -579,8 +579,8 @@ GET请求：
 - group: 分组详情，包含分组的ID、名称、成员列表。
 - id: 分组ID
 - name: 分组名称
-- members: 分组成员列表，包含成员的id、email、昵称、头像URL。   
-- id：成员ID    
+- members: 分组成员列表，包含成员的id、email、昵称、头像URL。
+- id：成员ID
 - email: 成员邮箱
 - name: 成员昵称
 - avatar_path: 成员头像URL
@@ -718,7 +718,7 @@ GET请求：
 ```
 
 - members: 分组成员列表，包含成员的id、email、昵称、头像URL。
-- id: 成员ID    
+- id: 成员ID
 - email: 成员邮箱
 - name: 成员昵称
 - avatar_path: 成员头像URL
@@ -846,7 +846,7 @@ DELETE请求：
 ```
 
 - friends: 好友列表，包含好友的id、email、昵称、头像URL。
-- id: 好友ID    
+- id: 好友ID
 - email: 好友邮箱
 - name: 好友昵称
 - avatar_path: 好友头像URL
@@ -863,7 +863,7 @@ DELETE请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若用户不存在，状态码404，错误码-1，错误信息"用户不存在"。
 
-#### 好友操作/friends/{friend_id}
+#### 好友操作/friends/
 
 该API用于操作指定好友，包括查看好友详情、删除好友，为好友分组操作。
 
@@ -880,6 +880,7 @@ GET请求：
     "friend_id": "friend_id"
 }
 ```
+
 - friend_id: 查看好友详情的好友ID
 
 响应：
@@ -907,7 +908,7 @@ GET请求：
 }
 ```
 
-- id: 好友ID    
+- id: 好友ID
 - email: 好友邮箱
 - name: 好友昵称
 - avatar_path: 好友头像URL
