@@ -14,11 +14,13 @@ from utils.utils_jwt import EXPIRE_IN_SECONDS, SALT, b64url_encode
 class ImsTests(TestCase):
     # Initializer
     def setUp(self):
-        holder = User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password="123456", user_info="tujz's account")
+        User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password="123456", user_info="tujz's account")
+        self.holder_id = User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").first().id
         User.objects.create(email="delete@mails.com", name="delete", password="123456", deleted=True)
+        self.delete_id = User.objects.filter(email='delete@mails.com').first().id
 
     # ! Utility functions
-    def generate_jwt_token(self, email: str, payload: dict, salt: str):
+    def generate_jwt_token(self, id: int, payload: dict, salt: str):
         # * header
         header = {
             "alg": "HS256",
@@ -41,17 +43,17 @@ class ImsTests(TestCase):
         return header_b64 + "." + payload_b64 + "." + signature_b64
 
     
-    def generate_header(self, email: str, payload: dict = {}, salt: str = SALT):
+    def generate_header(self, id: int, payload: dict = {}, salt: str = SALT):
         if len(payload) == 0:
             payload = {
                 "iat": int(time.time()),
                 "exp": int(time.time()) + EXPIRE_IN_SECONDS,
                 "data": {
-                    "email": email
+                    "id": id
                 }
             }
         return {
-            "HTTP_AUTHORIZATION": self.generate_jwt_token(email, payload, salt)
+            "HTTP_AUTHORIZATION": self.generate_jwt_token(id, payload, salt)
         }
 
     # ! Test section
@@ -145,29 +147,29 @@ class ImsTests(TestCase):
         self.assertEqual(res.json()['code'], -2)
 
     def test_delete_expired_jwt(self):
-        email = "tujz23@mails.tsinghua.edu.cn"
+        # email = "tujz23@mails.tsinghua.edu.cn"
         payload = {
             "iat": int(time.time()) - EXPIRE_IN_SECONDS * 2,
             "exp": int(time.time()) - EXPIRE_IN_SECONDS,
             "data": {
-                "email": email
+                "id": self.holder_id
             }
         }
-        headers = self.generate_header(email, payload)
+        headers = self.generate_header(self.holder_id, payload)
         res = self.client.delete('/account/delete', **headers)
         self.assertEqual(res.status_code, 401)
         self.assertEqual(res.json()['code'], -2)
 
     def test_delete_invalid_salt(self):
-        email = "tujz23@mails.tsinghua.edu.cn"
-        headers = self.generate_header(email, {}, "AnotherSalt".encode('utf-8'))
+        headers = self.generate_header(self.holder_id, {}, "AnotherSalt".encode('utf-8'))
         res = self.client.delete('/account/delete', **headers)
         
         self.assertEqual(res.status_code, 401)
         self.assertEqual(res.json()['code'], -2)
 
     def test_delete_success(self):
-        headers = self.generate_header("delete@mails.com")
+        User.objects.filter(id=self.delete_id).first().deleted = False
+        headers = self.generate_header(self.delete_id)
         res = self.client.delete('/account/delete', **headers)
 
         self.assertEqual(res.status_code, 200)
@@ -175,15 +177,15 @@ class ImsTests(TestCase):
         self.assertTrue(User.objects.filter(email="delete@mails.com").first().deleted)
 
     # * Tests for account information 
-    def test_info_get_no_user(self):
-        data = {"email": "wrongemail@email.com"}
-        res = self.client.get('/account/info', data)
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(res.json()['code'], -1)
+    def test_info_invalid_jwt(self):
+        headers = {"Authorization": "Invalid JWT"}
+        res = self.client.delete('/account/delete', **headers)
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(res.json()['code'], -2)
 
     def test_info_get_success(self):
-        data = {"email": "tujz23@mails.tsinghua.edu.cn"}
-        res = self.client.get('/account/info', data)
+        headers = self.generate_header(self.holder_id)
+        res = self.client.get('/account/info', **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
         self.assertEqual(res.json()['email'], "tujz23@mails.tsinghua.edu.cn")
@@ -192,15 +194,15 @@ class ImsTests(TestCase):
         self.assertEqual(res.json()['deleted'], False)
 
     def test_info_get_success2(self):
-        data = {"email": "delete@mails.com"}
-        res = self.client.get('/account/info', data)
+        headers = self.generate_header(self.delete_id)
+        res = self.client.get('/account/info', **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
         self.assertEqual(res.json()['deleted'], True)
 
     def test_info_modify_info(self):
-        headers = self.generate_header("tujz23@mails.tsinghua.edu.cn")
-        data = {"name": "newTujz", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info", "avatar_path": "new avatar path"}
+        headers = self.generate_header(self.holder_id)
+        data = {"name": "newTujz", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
         res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -209,19 +211,49 @@ class ImsTests(TestCase):
         self.assertEqual(modify_info.email, "tujz24@mails.tsinghua.edu.cn")
         self.assertEqual(modify_info.name, "newTujz")
         self.assertEqual(modify_info.user_info, "new user info")
-        self.assertEqual(modify_info.avatar, "new avatar path")
         self.assertEqual(modify_info.deleted, False)
         # 验证tujz23@mails.tsinghua.edu.cn没了
         self.assertTrue(User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").exists() == False)
         # 改回来
-        data = {"name": "tujz", "email": "tujz23@mails.tsinghua.edu.cn", "user_info": "tujz's account", "avatar_path": ""}
-        headers = self.generate_header("tujz23@mails.tsinghua.edu.cn")
-        res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
-        # 由于tujz23@mails.tsinghua.edu.cn被修改了，因此用tujz23@mails.tsinghua.edu.cn做token是不行的，应该属于wrong jwt_token的情况
-        self.assertEqual(res.status_code, 401)
-        self.assertEqual(res.json()['code'], -2)
-        # 换用tujz24@mails.tsinghua.edu.cn改回来
-        headers = self.generate_header("tujz24@mails.tsinghua.edu.cn")
+        data = {"name": "tujz", "email": "tujz23@mails.tsinghua.edu.cn", "user_info": "tujz's account"}
+        headers = self.generate_header(self.holder_id)
         res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
+    
+    # * Tests for search users
+    def test_search_users_missing_query1(self):
+        headers = self.generate_header(self.holder_id)
+        res = self.client.get('/search_user', {'query_name': ''}, **headers)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -7)
+    
+    def test_search_users_missing_query2(self):
+        headers = self.generate_header(self.holder_id)
+        res = self.client.get('/search_user', **headers)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -7)
+    
+    def test_search_users_user_not_found(self):
+        headers = self.generate_header(self.holder_id)
+        res = self.client.get('/search_user', {'query_name': 'wrong user name'}, **headers)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+    
+    def test_search_users_success(self):
+        user1 = User.objects.create(email="email1@email.com", name='user', password='123456')
+        user2 = User.objects.create(email="email2@email.com", name='user', password='123456')
+        user3 = User.objects.create(email="email3@email.com", name='user', password='123456')
+        user4 = User.objects.create(email="email4@email.com", name='user', password='123456', deleted=True)
+        headers = self.generate_header(self.holder_id)
+        res = self.client.get('/search_user', {'query_name': 'user'}, **headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        results = res.json()['results']
+        results.sort(key=lambda x:x['user_id'])
+        users = [user1, user2, user3]
+        self.assertEqual(len(results), len(users))
+        for i in range(len(results)):
+            self.assertEqual(users[i].email, results[i]['email'])
+            self.assertEqual(users[i].name, results[i]['name'])
+            self.assertEqual(users[i].deleted, results[i]['deleted'])

@@ -31,7 +31,7 @@ def login(req: HttpRequest):
         return request_failed(-3, "Wrong password", 401)
     # checking success or new user
     return_data = {
-            "token": generate_jwt_token(email)
+            "token": generate_jwt_token(user.id)
         }
     return request_success(return_data) # msg: Succeed.
 
@@ -64,7 +64,7 @@ def register(req: HttpRequest):
         user = User(email=email, name=name, password=password)
         user.save()
         return_data = {
-            "token": generate_jwt_token(email),
+            "token": generate_jwt_token(user.id),
             "message": "注册成功"
         }
         return request_success(return_data)
@@ -79,7 +79,7 @@ def delete(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401) 
-    user = User.objects.filter(email=payload["email"]).first()
+    user = User.objects.filter(id=payload["id"]).first()
     user.deleted = True
     user.save()
     return request_success({"message": "注销成功"})
@@ -92,13 +92,9 @@ def account_info(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(2, "Invalid or expired JWT", status_code=401) 
-    user = User.objects.filter(email=payload["email"]).first()
+    user = User.objects.filter(id=payload["id"]).first()
     # if jwt is valid, user must exist
     if req.method == "GET":
-        # body = json.loads(req.body.decode("utf-8"))
-        # email = require(body, "email", "string", err_msg="Missing or error type of [email]")
-        # email = req.GET.get("email")
-        # email = require({"email": email}, "email", "string", err_msg="Missing or error type of [email]")
         return_data = {
             "email": user.email,
             "name": user.name,
@@ -123,8 +119,9 @@ def account_info(req: HttpRequest):
         else:
             user.email = newemail
         user.user_info = require(body, "user_info", "string", err_msg="Missing or error type of [user_info]")
-        _avatar_path = require(body, "avatar_path", "string", err_msg="Missing or error type of [avatar_path]")
-        user.avatar = SimpleUploadedFile(name=str(user.id), content=open(_avatar_path, 'rb').read(), content_type='image/jpeg')
+        if "avatar_path" in body:
+            _avatar_path = require(body, "avatar_path", "string", err_msg="Missing or error type of [avatar_path]")
+            user.avatar = SimpleUploadedFile(name=str(user.id), content=open(_avatar_path, 'rb').read(), content_type='image/jpeg')
         user.save()
         if invalid_email:
             return request_failed(1, "Invalid email", 400)
@@ -134,39 +131,42 @@ def account_info(req: HttpRequest):
     else:
         return BAD_METHOD
     
-# @CheckRequire
-# def search_users(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def search_users(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
     
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     if req.method != "GET":
-#         return BAD_METHOD
+    if req.method != "GET":
+        return BAD_METHOD
     
 
-#     query_name = req.GET.get("query_name", "")
+    query_name = req.GET.get("query_name", "")
+    if query_name == "":
+        return request_failed(-7, "Missing or error type of [query_name]", 400)
 
-#     # 执行查询
-#     users = User.objects.filter(name = query_name, deleted=False)  # 只查询未注销用户
+    # 执行查询
+    users = User.objects.filter(name = query_name, deleted=False)  # 只查询未注销用户
 
-#     if not users.exist():
-#         return request_failed(-1, "User not found or deleted", 404)
+    if not users.exists():
+        return request_failed(-1, "User not found or deleted", 404)
     
-#     result=[
-#         {
-#             "user_id": user.id,
-#             "name": user.name,
-#             "email": user.email,
-#             "avatar_path": user.avatar.url if user.avatar else "",
-#         }
-#         for user in users
-#     ]
+    result=[
+        {
+            "user_id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "avatar_path": user.avatar.url if user.avatar else "",
+            "deleted": user.deleted
+        }
+        for user in users
+    ]
 
-#     return request_success(result)
+    return request_success({"results": result})
     
 # @CheckRequire
 # def add_friend(req: HttpRequest):
@@ -183,7 +183,7 @@ def account_info(req: HttpRequest):
     
 #     body = json.loads(req.body.decode("utf-8"))
 
-#     user_email = payload["email"]
+#     user_email = User.objects.filter(id=payload["id"]).first().email
 #     target_id = require(body, "target_id", "int", err_msg="Missing or error type of [target_id]")
 #     message = require(body, "message", "string", err_msg="Missing or error type of [message]")
 
@@ -233,7 +233,7 @@ def account_info(req: HttpRequest):
 #     if req.method != "GET":
 #         return BAD_METHOD
     
-#     user_email = payload["email"]
+#     user_email = User.objects.filter(id=payload["id"]).first().email
 
 #     cur_user_id = User.objects.filter(email=user_email).first().id
 
@@ -315,7 +315,7 @@ def account_info(req: HttpRequest):
 #         return BAD_METHOD
 #     # 获取群组列表
 #     if req.method == "GET":
-#         user_email = payload["email"]
+#         user_email = User.objects.filter(id=payload["id"]).first().email
 #         groups = Group.objects.filter(owner__email=user_email)
 #         group_list = [
 #             {
@@ -328,7 +328,7 @@ def account_info(req: HttpRequest):
 
 #     # 创建群组
 #     elif req.method == "POST":
-#         user_email = payload["email"]
+#         user_email = User.objects.filter(id=payload["id"]).first().email
 #         body = json.loads(req.body.decode("utf-8"))
 #         name = require(body, "name", "string", err_msg="Missing or error type of [name]")
 
@@ -382,7 +382,7 @@ def account_info(req: HttpRequest):
 #     # 修改分组名称
 #     elif req.method == "PUT":
 #         body = json.loads(req.body.decode("utf-8"))
-#         user_email = payload["email"]
+#         user_email = User.objects.filter(id=payload["id"]).first().email
 #         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
 #         new_name = require(body, "new_name", "string", err_msg="Missing or error type of [new_name]")
 
@@ -401,7 +401,7 @@ def account_info(req: HttpRequest):
     
 #     # 删除分组
 #     elif req.method == "DELETE":
-#         user_email = payload["email"]
+#         user_email = User.objects.filter(id=payload["id"]).first().email
 #         body = json.loads(req.body.decode("utf-8"))
 #         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
 
@@ -499,7 +499,7 @@ def account_info(req: HttpRequest):
 #     if req.method != "GET":
 #         return BAD_METHOD
     
-#     user_email = payload["email"]
+#     user_email = User.objects.filter(id=payload["id"]).first().email
 
 #     # 从对话中获取好友列表中好友的email列表
 #     friends_emails = (

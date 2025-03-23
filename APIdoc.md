@@ -159,7 +159,7 @@ name: 用户昵称
 }
 ```
 
-- 若用户邮箱不存在，状态码404，错误码-1，错误信息"用户不存在"。
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 
 ##### 修改个人信息
 
@@ -206,9 +206,9 @@ PUT请求：
 
 #### 用户查找/search_user
 
-该API用于查找指定ID的用户。
+该API用于查找指定昵称的用户。
 
-通过GET方式请求，请求体为：
+通过GET方式请求，请求携带参数为：
 
 ```json
 {
@@ -225,10 +225,22 @@ PUT请求：
 {
     "code": 0,
     "info": "success",
-    "user_id": "user_id",
-    "name": "userName",
-    "email": "userEmail",
-    "avatar_path": "userAvatarUrl",
+    "results": [
+        {
+            "user_id": "user_id",
+            "name": "userName",
+            "email": "userEmail",
+            "avatar_path": "userAvatarUrl",
+            "deleted": True
+        },
+        {
+            "user_id": "user_id",
+            "name": "userName",
+            "email": "userEmail",
+            "avatar_path": "userAvatarUrl",
+            "deleted": False
+        }
+    ]
 }
 ```
 
@@ -248,7 +260,7 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若无查询条件，状态码400，错误码-7，错误信息"Missing or error type of [query_email] or [query_name]"。
+- 若无查询条件，状态码400，错误码-7，错误信息"Missing or error type of [query_name]"。
 - 若查找的用户不存在或者已经被注销，状态码404，错误码-1，错误信息"User not found or deleted"。
 
 #### 好友申请/add_friend
