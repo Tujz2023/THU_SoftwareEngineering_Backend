@@ -19,6 +19,8 @@ build:
   # only:
   #   - dev
   # TODO End: [Student] Set as only main
+  only:
+    - master
 
 unit-test:
   # TODO Start: [Student] Set job image
@@ -55,3 +57,5 @@ deploy:
   # only:
   #   - dev
   # TODO End: [Student] Set as only main
+  only:
+    - master
