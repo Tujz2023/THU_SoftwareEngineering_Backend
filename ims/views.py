@@ -74,6 +74,7 @@ def register(req: HttpRequest):
             if user.password != password:
                 return request_failed(-3, "Wrong password", 401)
             user.deleted = False
+            user.name = name
             user.save()
             return request_success(
                 {"token": generate_jwt_token(user.id), "message": "已恢复账户"}
