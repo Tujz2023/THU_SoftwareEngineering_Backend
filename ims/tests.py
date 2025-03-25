@@ -84,7 +84,7 @@ class ImsTests(TestCase):
         res = self.client.post('/account/login', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], 1)
-        self.assertEqual(res.json()['info'], "User deleted")
+        self.assertEqual(res.json()['info'], "User deleted or not activated")
 
     def test_login_existing_user_correct_password(self):
         data = {"email": "tujz23@mails.tsinghua.edu.cn", "password": "123456"}
