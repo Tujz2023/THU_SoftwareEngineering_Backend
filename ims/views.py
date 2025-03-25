@@ -86,13 +86,21 @@ def register(req: HttpRequest):
             )
         return request_failed(-1, "User already exists", 400)
     else:
-        code = send_verification_email(email)
-        user = User(email=email, name=name, password=password, deleted=True)
+        user = User(email=email, name=name, password=password, deleted=False)
         user.save()
-        return_data = {"token": generate_jwt_token(user.id), "message": "注册成功", "code": code}
+        return_data = {"token": generate_jwt_token(user.id), "message": "注册成功"}
         return request_success(return_data)
 
-def send_verification_email(email):
+def send_verification_email(req: HttpRequest):
+    if req.method != "POST":
+        return BAD_METHOD
+
+    body = json.loads(req.body.decode("utf-8"))
+
+    email = require(body, "email", "string", err_msg="Missing or error type of [email]")
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return request_failed(1, "Invalid email", 400)
+    
     characters = string.digits  # 只使用数字
     code = ''.join(random.choice(characters) for _ in range(6))
     subject = '即时通讯系统 - 验证码'
@@ -113,14 +121,21 @@ def send_verification_email(email):
 </html>"""
 
     plain_message = strip_tags(html_message)
-    send_mail(
-        subject,
-        plain_message,
-        'instant_message@163.com', 
-        [email], 
-        html_message=html_message,
-    )
-    return code
+    try:
+        failed_count = send_mail(
+            subject,
+            plain_message,
+            'instant_message@163.com', 
+            [email], 
+            html_message=html_message,
+        )
+        if failed_count == 0:
+            return_data = {"verify_code": code, "message": "发送成功"}
+            return request_success(return_data)
+        else:
+            return request_failed(-5, "发送失败，请检查网络和邮箱", status_code=404)
+    except:
+        return request_failed(-5, "发送失败，请检查网络和邮箱", status_code=404)
 
 @CheckRequire
 def delete(req: HttpRequest):
@@ -153,7 +168,7 @@ def account_info(req: HttpRequest):
             "email": user.email,
             "name": user.name,
             "user_info": user.user_info,
-            "avatar_path": user.avatar.url if user.avatar else "",
+            "avatar": user.avatar,
             "deleted": user.deleted,
         }
         return request_success(return_data)
@@ -195,17 +210,9 @@ def account_info(req: HttpRequest):
             user.user_info = require(
                 body, "user_info", "string", err_msg="Missing or error type of [user_info]"
             )
-        if "avatar_path" in body:
-            _avatar_path = require(
-                body,
-                "avatar_path",
-                "string",
-                err_msg="Missing or error type of [avatar_path]",
-            )
-            user.avatar = SimpleUploadedFile(
-                name=str(user.id),
-                content=open(_avatar_path, "rb").read(),
-                content_type="image/jpeg",
+        if "avatar" in body:
+            user.avatar = require(
+                body, "avatar", "string", err_msg="Missing or error type of [avatar]"
             )
         user.save()
         if invalid_email:
@@ -247,7 +254,7 @@ def search_users(req: HttpRequest):
             "user_id": user.id,
             "name": user.name,
             "email": user.email,
-            "avatar_path": user.avatar.url if user.avatar else "",
+            "avatar": user.avatar,
             "deleted": user.deleted,
         }
         for user in users

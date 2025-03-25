@@ -76,8 +76,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-MEDIA_URL = '/images/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'ims/static/images')
+# MEDIA_URL = '/images/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'ims/static/images')
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
