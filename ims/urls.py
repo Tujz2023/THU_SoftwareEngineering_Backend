@@ -7,6 +7,7 @@ urlpatterns = [
     path('account/delete', views.delete),
     path('account/info', views.account_info),
     path('search_user', views.search_users),
+    path('verify', views.send_verification_email),
     # path('add_friend', views.add_friend),
     # path('friend_requests', views.get_friend_requests),
     # path('friend_requests/<request_id>', views.friend_request_handle),
