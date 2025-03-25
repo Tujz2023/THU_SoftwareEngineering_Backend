@@ -124,6 +124,7 @@ class ImsTests(TestCase):
         self.assertEqual(res.json()['code'], 0)
         self.assertTrue(res.json()['token'].count('.') == 2)
         self.assertTrue(User.objects.filter(email="register@reg.com").exists())
+        self.assertEqual(User.objects.filter(email="register@reg.com").first().deleted, False)
 
     def test_reg_user_recovery(self):
         data = {"email": "delete@mails.com", "password": "123456", "name": "delete"}

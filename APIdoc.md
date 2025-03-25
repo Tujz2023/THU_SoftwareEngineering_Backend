@@ -118,6 +118,43 @@ POST请求
 - 若用户已注销，状态码404，错误码1，错误信息"User deleted"。
 - 若密码错误，状态码401，错误码-3，错误信息"密码错误"。
 
+#### 获取验证码/verify
+
+该API用于向邮箱发送验证码。
+
+POST请求：
+
+```json
+{
+    "email": "user@example.com"
+}
+```
+
+请求成功时，设置状态码为200OK，返回加密后的验证码，成功相应格式为：
+
+```json
+{
+    "code": 0,
+    "info": "Succeed",
+    "verify_code": "123",
+    "message": "发送成功"
+}
+```
+
+- verify_code: 加密后的验证码
+
+请求失败时，错误相应格式为：
+
+```json
+{
+    "code": *,
+    "info": "[error message]"
+}
+```
+
+- 若发送失败，状态码404，错误码-5，错误信息"发送失败，请检查网络和邮箱"。
+- 若用户邮箱格式错误，状态码400，错误码1，错误信息"Invalid email"。
+
 #### 个人信息管理/account/info
 
 该API用于获取或修改用户的个人信息。
@@ -138,7 +175,7 @@ GET请求：
     "name": "userName",
     "email": "userEmail",
     "user_info":"user_info",
-    "avatar_path": "userAvatarUrl",
+    "avatar": "userAvatar",
     "deleted": false // 是否已被注销
 }
 ```
@@ -147,7 +184,7 @@ name: 用户昵称
 
 - email: 用户邮箱
 - user_info: 用户信息
-- avatar_path: 用户头像URL
+- avatar: 用户头像base64码
 - deleted: 该用户是否已被注销
 
 请求失败时，错误响应格式为：
@@ -172,7 +209,7 @@ PUT请求：
     "password": "newpassword",
     "email": "newUserEmail",
     "user_info": "newUserInfo",
-    "avatar_path": "newUserAvatarUrl"
+    "avatar": "newUserAvatar"
 }
 ```
 
@@ -181,7 +218,7 @@ PUT请求：
 - password: 用户密码
 - email: 用户邮箱
 - user_info: 用户信息
-- avatar_path: 用户头像URL
+- avatar: 用户头像base64码
 
 请求成功时，设置状态码为200OK，返回修改成功的消息，成功响应格式为:
 
