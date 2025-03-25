@@ -2,6 +2,11 @@ import json
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+import random
+import string
 
 from ims.models import User
 from ims.models import (
@@ -42,7 +47,7 @@ def login(req: HttpRequest):
     if user is None:
         return request_failed(-1, "User not found", 404)
     elif user.deleted:
-        return request_failed(1, "User deleted", 404)
+        return request_failed(1, "User deleted or not activated", 404)
     elif user.password != password:
         return request_failed(-3, "Wrong password", 401)
     # checking success or new user
@@ -81,11 +86,41 @@ def register(req: HttpRequest):
             )
         return request_failed(-1, "User already exists", 400)
     else:
-        user = User(email=email, name=name, password=password)
+        code = send_verification_email(email)
+        user = User(email=email, name=name, password=password, deleted=True)
         user.save()
-        return_data = {"token": generate_jwt_token(user.id), "message": "注册成功"}
+        return_data = {"token": generate_jwt_token(user.id), "message": "注册成功", "code": code}
         return request_success(return_data)
 
+def send_verification_email(email):
+    characters = string.digits  # 只使用数字
+    code = ''.join(random.choice(characters) for _ in range(6))
+    subject = '即时通讯系统 - 验证码'
+    # 使用模板
+    html_message = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Instant Messages验证码邮件</title>
+</head>
+<body>
+    <p>您好！</p>
+    <p>欢迎使用即时通讯系统。您的验证码是：<strong>{ code }</strong></p>
+    <p>此验证码将在 5 分钟后过期。</p>
+    <p>谢谢！</p>
+</body>
+</html>"""
+
+    plain_message = strip_tags(html_message)
+    send_mail(
+        subject,
+        plain_message,
+        'instant_message@163.com', 
+        [email], 
+        html_message=html_message,
+    )
+    return code
 
 @CheckRequire
 def delete(req: HttpRequest):
