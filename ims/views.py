@@ -100,7 +100,7 @@ def send_verification_email(req: HttpRequest):
     email = require(body, "email", "string", err_msg="Missing or error type of [email]")
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return request_failed(1, "Invalid email", 400)
-    
+
     characters = string.digits  # 只使用数字
     code = ''.join(random.choice(characters) for _ in range(6))
     subject = '即时通讯系统 - 验证码'
@@ -122,14 +122,14 @@ def send_verification_email(req: HttpRequest):
 
     plain_message = strip_tags(html_message)
     try:
-        failed_count = send_mail(
+        success_count = send_mail(
             subject,
             plain_message,
             'instant_message@163.com', 
             [email], 
             html_message=html_message,
         )
-        if failed_count == 0:
+        if success_count == 1:
             return_data = {"verify_code": code, "message": "发送成功"}
             return request_success(return_data)
         else:
