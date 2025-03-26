@@ -9,14 +9,15 @@ import json
 import base64
 
 from utils.utils_jwt import EXPIRE_IN_SECONDS, SALT, b64url_encode
+from utils.utils_crypto import encrypt_text, decrypt_text
 
 # Create your tests here.
 class ImsTests(TestCase):
     # Initializer
     def setUp(self):
-        User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password="123456", user_info="tujz's account")
+        User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password=encrypt_text("123456"), user_info="tujz's account")
         self.holder_id = User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").first().id
-        User.objects.create(email="delete@mails.com", name="delete", password="123456", deleted=True)
+        User.objects.create(email="delete@mails.com", name="delete", password=encrypt_text("123456"), deleted=True)
         self.delete_id = User.objects.filter(email='delete@mails.com').first().id
 
     # ! Utility functions
@@ -59,35 +60,35 @@ class ImsTests(TestCase):
     # ! Test section
     # * Tests for login view
     def test_login_invalid_email(self):
-        data = {"email": "invalidemail@com", "password": "123456"}
+        data = {"email": "invalidemail@com", "password": encrypt_text("123456")}
         res = self.client.post('/account/login', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], 1)
         self.assertEqual(res.json()['info'], "Invalid email")
 
     def test_login_no_existing_user(self):
-        data = {"email": "Email1@email.com", "password": "123456"}
+        data = {"email": "Email1@email.com", "password": encrypt_text("123456")}
         res = self.client.post('/account/login', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], -1)
         self.assertEqual(res.json()['info'], "User not found")
     
     def test_login_existing_user_wrong_password(self):
-        data = {"email": "tujz23@mails.tsinghua.edu.cn", "password": "wrongpassword"}
+        data = {"email": "tujz23@mails.tsinghua.edu.cn", "password": encrypt_text("wrongpassword")}
         res = self.client.post('/account/login', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 401)
         self.assertEqual(res.json()['code'], -3)
         self.assertEqual(res.json()['info'], "Wrong password")
     
     def test_login_deleted_user(self):
-        data = {"email": "delete@mails.com", "password": "wrongpassword"}
+        data = {"email": "delete@mails.com", "password": encrypt_text("wrongpassword")}
         res = self.client.post('/account/login', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], 1)
         self.assertEqual(res.json()['info'], "User deleted or not activated")
 
     def test_login_existing_user_correct_password(self):
-        data = {"email": "tujz23@mails.tsinghua.edu.cn", "password": "123456"}
+        data = {"email": "tujz23@mails.tsinghua.edu.cn", "password": encrypt_text("123456")}
         res = self.client.post('/account/login', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -96,21 +97,21 @@ class ImsTests(TestCase):
 
     # * Tests for register view
     def test_reg_name_too_long(self):
-        data = {"email": "test@test.com", "password": "123456", "name": "thisisatoolongusername**************"}
+        data = {"email": "test@test.com", "password": encrypt_text("123456"), "name": "thisisatoolongusername**************"}
         res = self.client.post('/account/reg', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], -3)
         self.assertTrue(User.objects.filter(email="test@test.com").exists() == False)
     
     def test_reg_password_illegal(self):
-        data = {"email": "test@test.com", "password": "oops!/wrong", "name": "testname"}
+        data = {"email": "test@test.com", "password": encrypt_text("oops!/wrong"), "name": "testname"}
         res = self.client.post('/account/reg', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], -4)
         self.assertTrue(User.objects.filter(email="test@test.com").exists() == False)
     
     def test_reg_already_exist_user(self):
-        data = {"email": "tujz23@mails.tsinghua.edu.cn", "password": "password", "name": "tujz2"}
+        data = {"email": "tujz23@mails.tsinghua.edu.cn", "password": encrypt_text("password"), "name": "tujz2"}
         res = self.client.post('/account/reg', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], -1)
@@ -118,7 +119,7 @@ class ImsTests(TestCase):
         self.assertTrue(User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").first().name == "tujz")
     
     def test_reg_success_register(self):
-        data = {"email": "register@reg.com", "password": "123456", "name": "register"}
+        data = {"email": "register@reg.com", "password": encrypt_text("123456"), "name": "register"}
         res = self.client.post('/account/reg', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -127,7 +128,7 @@ class ImsTests(TestCase):
         self.assertEqual(User.objects.filter(email="register@reg.com").first().deleted, False)
 
     def test_reg_user_recovery(self):
-        data = {"email": "delete@mails.com", "password": "123456", "name": "delete"}
+        data = {"email": "delete@mails.com", "password": encrypt_text("123456"), "name": "delete"}
         res = self.client.post('/account/reg', data=data, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -203,7 +204,7 @@ class ImsTests(TestCase):
 
     def test_info_wrong_password(self):
         headers = self.generate_header(self.holder_id)
-        data = {"origin_password": "123", "name": "newTujz", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
+        data = {"origin_password": encrypt_text("123"), "name": "newTujz", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
         res = self.client.put('/account/info', data=data, content_type='application/json', **headers)
         self.assertEqual(res.status_code, 401)
         self.assertEqual(res.json()['code'], -3)
@@ -211,7 +212,7 @@ class ImsTests(TestCase):
 
     def test_info_modify_info(self):
         headers = self.generate_header(self.holder_id)
-        data = {"origin_password": "123456", "name": "newTujz", "password": "654321", "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
+        data = {"origin_password": encrypt_text("123456"), "name": "newTujz", "password": encrypt_text("654321"), "email": "tujz24@mails.tsinghua.edu.cn", "user_info": "new user info"}
         res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -220,12 +221,12 @@ class ImsTests(TestCase):
         self.assertEqual(modify_info.email, "tujz24@mails.tsinghua.edu.cn")
         self.assertEqual(modify_info.name, "newTujz")
         self.assertEqual(modify_info.user_info, "new user info")
-        self.assertEqual(modify_info.password, "654321")
+        self.assertEqual(modify_info.password, encrypt_text("654321"))
         self.assertEqual(modify_info.deleted, False)
         # 验证tujz23@mails.tsinghua.edu.cn没了
         self.assertTrue(User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").exists() == False)
         # 改回来
-        data = {"origin_password": "654321", "password": "123456", "name": "tujz", "email": "tujz23@mails.tsinghua.edu.cn", "user_info": "tujz's account"}
+        data = {"origin_password": encrypt_text("654321"), "password": encrypt_text("123456"), "name": "tujz", "email": "tujz23@mails.tsinghua.edu.cn", "user_info": "tujz's account"}
         headers = self.generate_header(self.holder_id)
         res = self.client.put('/account/info', data=data, content_type="application/json", **headers)
         self.assertEqual(res.status_code, 200)
@@ -251,10 +252,10 @@ class ImsTests(TestCase):
         self.assertEqual(res.json()['code'], -1)
     
     def test_search_users_success(self):
-        user1 = User.objects.create(email="email1@email.com", name='user', password='123456')
-        user2 = User.objects.create(email="email2@email.com", name='user', password='123456')
-        user3 = User.objects.create(email="email3@email.com", name='user', password='123456')
-        user4 = User.objects.create(email="email4@email.com", name='user', password='123456', deleted=True)
+        user1 = User.objects.create(email="email1@email.com", name='user', password=encrypt_text('123456'))
+        user2 = User.objects.create(email="email2@email.com", name='user', password=encrypt_text('123456'))
+        user3 = User.objects.create(email="email3@email.com", name='user', password=encrypt_text('123456'))
+        user4 = User.objects.create(email="email4@email.com", name='user', password=encrypt_text('123456'), deleted=True)
         headers = self.generate_header(self.holder_id)
         res = self.client.get('/search_user', {'query_name': 'user'}, **headers)
         self.assertEqual(res.status_code, 200)
