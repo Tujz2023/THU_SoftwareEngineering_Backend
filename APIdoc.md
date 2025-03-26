@@ -21,7 +21,7 @@ POST请求
 ```
 
 - name: 用户昵称，应当为非空字符串，可以包含任何utf-8字符，且长度不大于20
-- password: 用户密码，应当为非空字符串，由字母、数字、下划线组成，且长度不大于20
+- password: 加密之后的用户密码，解密后应当为非空字符串，由字母、数字、下划线组成，且长度不大于20
 
 请求成功时，设置状态码为200OK，返回用户的基本信息，成功响应格式为:
 
@@ -93,7 +93,7 @@ POST请求
 ```
 
 - name: 用户昵称
-- password: 用户密码
+- password: 加密之后的用户密码
 
 请求成功时，设置状态码为200OK，返回JWT令牌，成功响应格式为:
 
@@ -136,7 +136,7 @@ POST请求：
 {
     "code": 0,
     "info": "Succeed",
-    "verify_code": "123",
+    "verify_code": "******",
     "message": "发送成功"
 }
 ```
@@ -213,9 +213,9 @@ PUT请求：
 }
 ```
 
-- origin_password: 用户输入的原密码
+- origin_password: 加密之后的用户输入的原密码
 - name: 用户昵称
-- password: 用户密码
+- password: 加密之后的用户密码
 - email: 用户邮箱
 - user_info: 用户信息
 - avatar: 用户头像base64码

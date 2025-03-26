@@ -27,6 +27,7 @@ from utils.utils_request import (
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from utils.utils_jwt import generate_jwt_token, check_jwt_token
+from utils.utils_crypto import encrypt_text, decrypt_text
 import re
 
 
@@ -72,7 +73,7 @@ def register(req: HttpRequest):
     name = require(body, "name", "string", err_msg="Missing or error type of [name]")
     if len(name) > 20 or name == "":
         return request_failed(-3, "Name too long", 400)
-    if not re.match(r"^[a-zA-Z0-9_]{1,20}$", password):
+    if not re.match(r"^[a-zA-Z0-9_]{1,20}$", decrypt_text(password)):
         return request_failed(-4, "Password illegal", 400)
     if user is not None:
         if user.deleted:
@@ -130,7 +131,7 @@ def send_verification_email(req: HttpRequest):
             html_message=html_message,
         )
         if success_count == 1:
-            return_data = {"verify_code": code, "message": "发送成功"}
+            return_data = {"verify_code": encrypt_text(code), "message": "发送成功"}
             return request_success(return_data)
         else:
             return request_failed(-5, "发送失败，请检查网络和邮箱", status_code=404)
@@ -202,7 +203,7 @@ def account_info(req: HttpRequest):
             newpassword = require(
                 body, "password", "string", err_msg="Missing or error type of [password]"
             )
-            if not re.match(r"^[a-zA-Z0-9_]{1,20}$", newpassword):
+            if not re.match(r"^[a-zA-Z0-9_]{1,20}$", decrypt_text(newpassword)):
                 invalid_pass = True
             user.password = newpassword
 
