@@ -16,8 +16,8 @@ build:
     - export BUILD_IMAGE_PASSWORD=$CI_REGISTRY_PASSWORD
     - deployer build
   # TODO Start: [Student] Set as only main
-  only:
-    - dev
+  # only:
+  #   - dev
   # TODO End: [Student] Set as only main
   # only:
   #   - master
@@ -54,8 +54,8 @@ deploy:
     - export API_SERVER=https://deployer.spring25b.secoder.net/api
     - deployer dyno replace $CI_PROJECT_NAME "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
   # TODO Start: [Student] Set as only main
-  only:
-    - dev
+  # only:
+  #   - dev
   # TODO End: [Student] Set as only main
   # only:
   #   - master
