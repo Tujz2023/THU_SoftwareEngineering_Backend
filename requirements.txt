@@ -9,6 +9,7 @@ pytest-django
 coverage
 Pillow
 cryptography
+psycopg2-binary
 
 # TODO Start: [Student] Add dependency on uWSGI
 uwsgi
