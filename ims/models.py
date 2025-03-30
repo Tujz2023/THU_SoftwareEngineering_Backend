@@ -47,7 +47,7 @@ class Conversation(models.Model):
     members = models.ManyToManyField(User)
     ConvName = models.CharField(max_length=MAX_CHAR_LENGTH, default="群组")
     created_time = models.FloatField(default=utils_time.get_timestamp)
-    avatar = models.ImageField(upload_to='avatar/conversation/', blank=True, null=True)
+    avatar = models.CharField(max_length=MAX_AVATAR_LENGTH)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="creator")
     managers = models.ManyToManyField(User, related_name="managers")
     last_message_id = models.IntegerField(default=-1)
