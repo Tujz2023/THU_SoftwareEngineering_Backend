@@ -273,14 +273,14 @@ PUT请求：
             "user_id": "user_id",
             "name": "userName",
             "email": "userEmail",
-            "avatar_path": "userAvatarUrl",
+            "avatar": "userAvatarUrl",
             "deleted": True
         },
         {
             "user_id": "user_id",
             "name": "userName",
             "email": "userEmail",
-            "avatar_path": "userAvatarUrl",
+            "avatar": "userAvatarUrl",
             "deleted": False
         }
     ]
@@ -290,7 +290,7 @@ PUT请求：
 - name: 用户昵称
 - user_id: 用户ID
 - email: 用户邮箱
-- avatar_path: 用户头像URL
+- avatar: 用户头像URL
 - deleted: 该用户是否已被注销
 
 请求失败时，错误相应的格式为：
@@ -374,7 +374,7 @@ PUT请求：
             "receiver_user_id": "user_id",
             "user_email": "user_email",
             "user_name": "UserName",
-            "avatar_path": "AvatarUrl",
+            "avatar": "AvatarUrl",
             "message": "申请消息",
             "created_at": "2025-03-13T14:30:00Z", // 申请时间
             "status": 0 // 0: 等待处理，1: 已同意，2: 已拒绝
@@ -384,7 +384,7 @@ PUT请求：
             "receiver_user_id": "user_id",
             "user_email": "user_email",
             "user_name": "UserName",
-            "avatar_path": "AvatarUrl",
+            "avatar": "AvatarUrl",
             "message": "申请消息",
             "created_at": "2025-03-13T14:30:00Z", // 申请时间
             "status": 1 // 0: 等待处理，1: 已同意，2: 已拒绝
@@ -398,7 +398,7 @@ PUT请求：
 - receiver_user_id: 接收者ID
 - user_email: 申请者邮箱
 - user_name: 申请者昵称
-- avatar_path: 申请者头像URL
+- avatar: 申请者头像URL
 - message: 申请消息
 - created_at: 申请时间
 - timestamp: 申请时间
@@ -606,13 +606,13 @@ GET请求：
                 "id": "user_id",
                 "email": "user_email",
                 "name": "userName",
-                "avatar_path": "AvatarUrl",
+                "avatar": "AvatarUrl",
             },  
             {
                 "id": "user_id",
                 "email": "user_email",
                 "name": "userName",
-                "avatar_path": "AvatarUrl",
+                "avatar": "AvatarUrl",
             }
         ]
     }
@@ -626,7 +626,7 @@ GET请求：
 - id：成员ID
 - email: 成员邮箱
 - name: 成员昵称
-- avatar_path: 成员头像URL
+- avatar: 成员头像URL
 
 请求失败时，错误相应的格式为：
 
@@ -748,13 +748,13 @@ GET请求：
             "id": "user_id",
             "email": "user_email",
             "name": "userName",
-            "avatar_path": "AvatarUrl",
+            "avatar": "AvatarUrl",
         },  
         {
             "id": "user_id",
             "email": "user_email",
             "name": "userName",
-            "avatar_path": "AvatarUrl",
+            "avatar": "AvatarUrl",
         }
     ]
 }
@@ -764,7 +764,7 @@ GET请求：
 - id: 成员ID
 - email: 成员邮箱
 - name: 成员昵称
-- avatar_path: 成员头像URL
+- avatar: 成员头像URL
 
 请求失败时，错误相应的格式为：
 
@@ -876,13 +876,13 @@ DELETE请求：
             "id": "user_id",
             "email": "user_email",
             "name": "userName",
-            "avatar_path": "AvatarUrl",
+            "avatar": "AvatarUrl",
         },  
         {
             "id": "user_id",
             "email": "user_email",
             "name": "userName",
-            "avatar_path": "AvatarUrl",
+            "avatar": "AvatarUrl",
         }
     ]
 }
@@ -892,7 +892,7 @@ DELETE请求：
 - id: 好友ID
 - email: 好友邮箱
 - name: 好友昵称
-- avatar_path: 好友头像URL
+- avatar: 好友头像URL
 
 请求失败时，错误相应的格式为：
 
@@ -936,7 +936,7 @@ GET请求：
     "id": "user_id",
     "email": "friend_email",
     "name": "userName",
-    "avatar_path": "AvatarUrl",
+    "avatar": "AvatarUrl",
     "deleted": false,
     "groups": [
         {
@@ -954,7 +954,7 @@ GET请求：
 - id: 好友ID
 - email: 好友邮箱
 - name: 好友昵称
-- avatar_path: 好友头像URL
+- avatar: 好友头像URL
 - `deleted`: 好友是否已注销
 - `groups`: 好友所在分组名称
 
@@ -1080,7 +1080,7 @@ GET请求：
         {
             "id":"convid",
             "name":"conversationName",
-            "avatar_path":"AvatarUrl",
+            "avatar":"AvatarUrl",
             "last_message":"lastMessage",
             "last_message_time":"lastMessageTime",
             "is_chat_group":true,
@@ -1095,7 +1095,7 @@ GET请求：
 - conversation: 聊天列表，包含参与人头像、消息列表等。
 - id: 会话ID
 - name: 会话名称
-- avatar_path: 参与人头像URL
+- avatar: 参与人头像URL
 - last_message: 最后一条消息内容
 - last_message_time: 最后一条消息时间
 - is_chat_group: 是否为群聊
@@ -1126,7 +1126,7 @@ POST请求：
     "is_chat_group": true,
     "host_id": "user_email",
     "name": "conversationName",
-    "avatar_path": "AvatarUrl",
+    "avatar": "AvatarUrl",
     "timestamp": "2025-03-13T14:30:00Z"
 }
 ```
@@ -1136,7 +1136,7 @@ POST请求：
 - is_chat_group: 是否为群聊
 - host_id: 会话创建者ID，默认为创建者id
 - name: 会话名称
-- avatar_path: 会话头像URL
+- avatar: 会话头像URL
 - timestamp: 会话创建时间
 
 响应：
@@ -1228,7 +1228,7 @@ GET请求：
     "id": "convid",
     "is_chat_group": true,
     "name": "conversationName",
-    "avatar_path": "AvatarUrl",
+    "avatar": "AvatarUrl",
     "last_message": "lastMessage",
     "last_message_time": "lastMessageTime",
     "is_top": true,
@@ -1237,12 +1237,12 @@ GET请求：
         {
             "id": "user_email",
             "name": "userName",
-            "avatar_path": "AvatarUrl"
+            "avatar": "AvatarUrl"
         },
         {
             "id": "user_email",
             "name": "userName",
-            "avatar_path": "AvatarUrl"
+            "avatar": "AvatarUrl"
         }
     ],
     "notification":[
@@ -1250,7 +1250,7 @@ GET请求：
             "id": "notificationId",
             "sender_id": "senderId",
             "sender_name": "senderName",
-            "sender_avatar_path": "AvatarUrl",
+            "sender_avatar": "AvatarUrl",
             "content": "notificationContent",
             "timestamp": "2025-03-13T14:30:00Z"
         },
@@ -1258,7 +1258,7 @@ GET请求：
             "id": "notificationId", 
             "sender_id": "senderId",
             "sender_name": "senderName",
-            "sender_avatar_path": "AvatarUrl",
+            "sender_avatar": "AvatarUrl",
             "content": "notificationContent",
             "timestamp": "2025-03-13T14:30:00Z"
         }
@@ -1269,7 +1269,7 @@ GET请求：
 - id: 会话ID
 - is_chat_group: 是否为群聊
 - name: 会话名称
-- avatar_path: 会话头像URL
+- avatar: 会话头像URL
 - last_message: 最后一条消息内容
 - last_message_time: 最后一条消息时间
 - is_top: 是否置顶
@@ -1315,7 +1315,7 @@ GET请求：
             "sender_id": "senderId",
             "sender_name": "senderName",
             "is_self": true,
-            "sender_avatar_path": "AvatarUrl",
+            "sender_avatar": "AvatarUrl",
             "content": "messageContent",
             "reply_num": 0,
             "timestamp": "2025-03-13T14:30:00Z"
@@ -1325,7 +1325,7 @@ GET请求：
             "sender_id": "senderId",
             "sender_name": "senderName",
             "is_self": false,
-            "sender_avatar_path": "AvatarUrl",
+            "sender_avatar": "AvatarUrl",
             "content": "messageContent",
             "reply_num": 0,
             "timestamp": "2025-03-13T14:30:00Z"
@@ -1339,7 +1339,7 @@ GET请求：
 - sender_id: 发送者ID
 - sender_name: 发送者昵称
 - is_self: 是否为自己发送的消息
-- sender_avatar_path: 发送者头像URL
+- sender_avatar: 发送者头像URL
 - content: 消息内容
 - reply_num: 回复消息数
 - timestamp: 消息时间
@@ -1434,7 +1434,7 @@ GET请求：
             "id": "messageId",
             "sender_id": "senderId",
             "sender_name": "senderName",
-            "sender_avatar_path": "AvatarUrl",
+            "sender_avatar": "AvatarUrl",
             "content": "messageContent",
             "timestamp": "2025-03-13T14:30:00Z"
         },
@@ -1442,7 +1442,7 @@ GET请求：
             "id": "messageId",
             "sender_id": "senderId",
             "sender_name": "senderName",
-            "sender_avatar_path": "AvatarUrl",
+            "sender_avatar": "AvatarUrl",
             "content": "messageContent",
             "timestamp": "2025-03-13T14:30:00Z"
         }
@@ -1454,7 +1454,7 @@ GET请求：
 - id: 消息ID
 - sender_id: 发送者ID
 - sender_name: 发送者昵称
-- sender_avatar_path: 发送者头像URL
+- sender_avatar: 发送者头像URL
 - content: 消息内容
 - timestamp: 消息时间
 
@@ -1862,7 +1862,7 @@ POST请求：
     "conversationId": "conversationId",
     "user_email": "user_email",
     "name": "groupName",
-    "avatar_path": "AvatarUrl",
+    "avatar": "AvatarUrl",
     "admins": ["adminId1", "adminId2"],
     "members": ["member_email1", "member_email2"]
 }
@@ -1871,7 +1871,7 @@ POST请求：
 - conversationId: 更新群信息的会话ID
 - user_email: 更新群信息的用户ID
 - name: 群名称
-- avatar_path: 群头像URL
+- avatar: 群头像URL
 - admins: 群管理员ID列表
 - members: 群成员ID列表
 

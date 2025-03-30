@@ -8,7 +8,6 @@ from django.utils.html import strip_tags
 import random
 import string
 
-from ims.models import User
 from ims.models import (
     Conversation,
     User,
@@ -342,7 +341,7 @@ def search_users(req: HttpRequest):
 #             "receiver_user_id": cur_user_id,
 #             "user_email": req.sender.email,
 #             "user_name": req.sender.name,
-#             "avatar_path": req.sender.avatar.url if req.sender.avatar else "",
+#             "avatar": req.sender.avatar,
 #             "message": req.message,
 #             "created_at":req.time,
 #             "status": req.status
@@ -462,7 +461,7 @@ def search_users(req: HttpRequest):
 #                 "id": member.id,
 #                 "email": member.email,
 #                 "name": member.name,
-#                 "avatar_path": member.avatar.url if member.avatar else "",
+#                 "avatar": member.avatar,
 #             }
 #             for member in group.members.all()
 #         ]
@@ -533,7 +532,7 @@ def search_users(req: HttpRequest):
 #                 "id": member.id,
 #                 "email": member.email,
 #                 "name": member.name,
-#                 "avatar_path": member.avatar.url if member.avatar else "",
+#                 "avatar": member.avatar,
 #             }
 #             for member in group.members.all()
 #         ]
@@ -611,7 +610,7 @@ def search_users(req: HttpRequest):
 #             "id": friend.id,
 #             "email": friend.email,
 #             "name": friend.name,
-#             "avatar_path": friend.avatar.url if friend.avatar else "",
+#             "avatar": friend.avatar,
 #         }
 #         for friend in friends
 #     ]
@@ -650,7 +649,7 @@ def search_users(req: HttpRequest):
 #             "id": friend.id,
 #             "email": friend.email,
 #             "name": friend.name,
-#             "avatar_path": friend.avatar.url if friend.avatar else "",
+#             "avatar": friend.avatar,
 #             "deleted": friend.deleted,
 #             "groups": [
 #                 {
