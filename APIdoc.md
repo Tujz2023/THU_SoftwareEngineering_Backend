@@ -1198,6 +1198,7 @@ POST请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若当前用户并没有在会话中，状态码400，错误码1，错误信息“Not in conversation”。
 - 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
 - 若消息为空，状态码400，错误码-3，错误信息"Content is empty"。
 - 若消息过长（>255），状态码400，错误码-3，错误信息"Content too long"。
@@ -1289,73 +1290,6 @@ GET请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
-##### 查看会话聊天记录 /message
-
-GET请求：
-
-```json
-{
-    "conversationId": "conversationId",
-    "user_email": "user_email"
-}
-```
-
-- conversationId: 查看会话聊天记录的会话ID
-
-响应：
-请求成功时，设置状态码为200OK，返回会话聊天记录，成功响应格式为:
-
-```json
-{
-    "code": 0,
-    "info": "Succeed",
-    "messages": [
-        {
-            "id": "messageId",
-            "sender_id": "senderId",
-            "sender_name": "senderName",
-            "is_self": true,
-            "sender_avatar": "AvatarUrl",
-            "content": "messageContent",
-            "reply_num": 0,
-            "timestamp": "2025-03-13T14:30:00Z"
-        },
-        {
-            "id": "messageId",
-            "sender_id": "senderId",
-            "sender_name": "senderName",
-            "is_self": false,
-            "sender_avatar": "AvatarUrl",
-            "content": "messageContent",
-            "reply_num": 0,
-            "timestamp": "2025-03-13T14:30:00Z"
-        }
-    ]
-}
-```
-
-- messages: 会话消息列表，包含消息ID、发送者ID、发送者昵称、发送者头像、消息内容、消息时间等。
-- id: 消息ID
-- sender_id: 发送者ID
-- sender_name: 发送者昵称
-- is_self: 是否为自己发送的消息
-- sender_avatar: 发送者头像URL
-- content: 消息内容
-- reply_num: 回复消息数
-- timestamp: 消息时间
-
-请求失败时，错误相应的格式为：
-
-```json
-{  
-    "code": *,  
-    "info": "[error message]"
-}
-```
-
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
-
 ##### 置顶会话、消息免打扰、未读信息数设置 /interface
 
 POST请求：
@@ -1365,7 +1299,7 @@ POST请求：
     "conversationId": "conversationId",
     "ontop": true,
     "notification": false,
-    "unreads": unread_number
+    "unreads": "unread_number"
 }
 ```
 
@@ -1396,7 +1330,7 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
-#### 聊天记录管理 /conversations//messages
+#### 聊天记录管理 /conversations//manage_messages
 
 该API用于管理特定会话的聊天记录，包括筛选聊天记录，删除聊天记录
 
