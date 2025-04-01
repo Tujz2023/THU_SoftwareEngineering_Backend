@@ -80,9 +80,8 @@ def register(req: HttpRequest):
         return request_failed(-4, "Password illegal", 400)
     if user is not None:
         if user.deleted:
-            if user.password != password:
-                return request_failed(-3, "Wrong password", 401)
             user.deleted = False
+            user.password = password
             user.name = name
             user.save()
             return request_success(
