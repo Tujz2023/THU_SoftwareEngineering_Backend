@@ -1,6 +1,9 @@
 django==5.1.6
 
-django-cors-headers
+channels==4.0.0
+daphne==4.1.0
+django-cors-headers==4.3.1
+
 # pymysql
 # mysqlclient
 
