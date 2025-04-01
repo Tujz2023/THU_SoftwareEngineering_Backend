@@ -4,7 +4,10 @@ from django.shortcuts import render
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.utils.html import strip_tags
+from .email import verification_email
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 import random
 import datetime
 import string
@@ -92,6 +95,7 @@ def register(req: HttpRequest):
         return_data = {"token": generate_jwt_token(user.id), "message": "注册成功"}
         return request_success(return_data)
 
+
 def send_verification_email(req: HttpRequest):
     if req.method != "POST":
         return BAD_METHOD
@@ -103,32 +107,15 @@ def send_verification_email(req: HttpRequest):
         return request_failed(1, "Invalid email", 400)
 
     characters = string.digits  # 只使用数字
-    code = ''.join(random.choice(characters) for _ in range(6))
-    subject = '即时通讯系统 - 验证码'
-    # 使用模板
-    html_message = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Instant Messages验证码邮件</title>
-</head>
-<body>
-    <p>您好！</p>
-    <p>欢迎使用即时通讯系统。您的验证码是：<strong>{ code }</strong></p>
-    <p>此验证码将在 5 分钟后过期。</p>
-    <p>谢谢！</p>
-</body>
-</html>"""
-
-    plain_message = strip_tags(html_message)
+    code = "".join(random.choice(characters) for _ in range(6))
+    verification = verification_email(code=code)
     try:
         success_count = send_mail(
-            subject,
-            plain_message,
-            'instant_message@163.com', 
-            [email], 
-            html_message=html_message,
+            verification.subject,
+            verification.plain_message,
+            "instant_message@163.com",
+            [email],
+            html_message=verification.message,
         )
         if success_count == 1:
             return_data = {"verify_code": encrypt_text(code), "message": "发送成功"}
@@ -137,6 +124,7 @@ def send_verification_email(req: HttpRequest):
             return request_failed(-5, "发送失败，请检查网络和邮箱", status_code=404)
     except:
         return request_failed(-5, "发送失败，请检查网络和邮箱", status_code=404)
+
 
 @CheckRequire
 def delete(req: HttpRequest):
@@ -201,7 +189,10 @@ def account_info(req: HttpRequest):
                 user.email = newemail
         if "password" in body:
             newpassword = require(
-                body, "password", "string", err_msg="Missing or error type of [password]"
+                body,
+                "password",
+                "string",
+                err_msg="Missing or error type of [password]",
             )
             if not re.match(r"^[a-zA-Z0-9_]{1,20}$", decrypt_text(newpassword)):
                 invalid_pass = True
@@ -209,7 +200,10 @@ def account_info(req: HttpRequest):
 
         if "user_info" in body:
             user.user_info = require(
-                body, "user_info", "string", err_msg="Missing or error type of [user_info]"
+                body,
+                "user_info",
+                "string",
+                err_msg="Missing or error type of [user_info]",
             )
         if "avatar" in body:
             user.avatar = require(
@@ -795,13 +789,15 @@ def friend_request_handle(req: HttpRequest):
 #     body = json.loads(req.body.decode("utf-8"))
 #     conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
 #     conv = Conversation.objects.filter(id=conv_id).first()
-#     cur_user = User.objects.filter(email=payload["email"]).first()
+#     cur_user = User.objects.filter(id=payload["id"]).first()
 #     if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
 #         return request_failed(1, "Not in conversation", 400)
 #     if not conv:
 #         return request_failed(-1, "Conversation not found", 404)
-
 #     if req.method == "POST":
+#         channel_layer = get_channel_layer()
+#         for member in conv.members.all():# conv的所有member
+#             async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
 #         content = require(body, "content", "string", err_msg="Missing or error type of [content]")
 #         if content == "":
 #             return request_failed(-3, "Content is empty", 400)
@@ -814,6 +810,10 @@ def friend_request_handle(req: HttpRequest):
 #         # GET method
 #         messages = Message.objects.filter(conversation=conv).order_by("time")
 #         return request_success({"messages": [msg.serialize() for msg in messages]})
+#         # # Selected messages after timestamp:
+#         # timestamp = req.GET.get('time', '0')
+#         # messages = Message.objects.filter(time__gte=timestamp).order_by('time')
+#         # return request_success({"messages": [msg.serialize() for msg in messages]})
 
 # @CheckRequire
 # def interface(req: HttpRequest):
@@ -823,7 +823,7 @@ def friend_request_handle(req: HttpRequest):
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     cur_user = User.objects.filter(email=payload["email"]).first()
+#     cur_user = User.objects.filter(id=payload["id"]).first()
 
 #     conversation_id = req.GET.get("conversation_id", "")
 #     conver = Conversation.objects.filter(id=conversation_id).first()
