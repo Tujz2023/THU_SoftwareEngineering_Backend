@@ -8,6 +8,9 @@ pytest
 pytest-django
 coverage
 Pillow
+channels==4.0.0
+daphne==4.1.0
+django-cors-headers==4.3.1
 cryptography
 psycopg2-binary
 
