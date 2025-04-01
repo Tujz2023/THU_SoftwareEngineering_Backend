@@ -3,6 +3,7 @@ from django.db import models
 from utils.utils_request import return_field
 
 from utils.utils_require import MAX_CHAR_LENGTH, MAX_AVATAR_LENGTH
+from utils.utils_avatar import DEFAULT_AVATAR
 
 class User(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
@@ -12,7 +13,7 @@ class User(models.Model):
     created_time = models.FloatField(default=utils_time.get_timestamp)
     user_info = models.CharField(max_length=MAX_CHAR_LENGTH, default="该用户很懒，什么也没有留下~")
     # avatar = models.ImageField(upload_to='avatar/user/', blank=True, null=True)
-    avatar = models.CharField(max_length=MAX_AVATAR_LENGTH)
+    avatar = models.CharField(max_length=MAX_AVATAR_LENGTH, default=DEFAULT_AVATAR)
     deleted = models.BooleanField(default=False)
     
     class Meta:
