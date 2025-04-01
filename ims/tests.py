@@ -31,10 +31,9 @@ class ImsTests(TestCase):
 
 
     # def test_a(self):
-    #     new_conversation = Conversation(type=0)
-    #     new_conversation.members.add(self.holder)
-    #     new_conversation.save()
-    #     print("ok!")
+    #     res = self.client.post('/verify', data={"email": "tujz23@mails.tsinghua.edu.cn"}, content_type='application/json')
+    #     self.assertEqual(res.status_code, 200)
+    #     self.assertEqual(res.json()['code'], 0)
 
     # ! Utility functions
     def generate_jwt_token(self, id: int, payload: dict, salt: str):

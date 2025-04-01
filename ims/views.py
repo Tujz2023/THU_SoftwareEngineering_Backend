@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from .email import verification_email
+from ims.email import verification_email
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
@@ -103,7 +103,6 @@ def send_verification_email(req: HttpRequest):
     email = require(body, "email", "string", err_msg="Missing or error type of [email]")
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return request_failed(1, "Invalid email", 400)
-
     characters = string.digits  # 只使用数字
     code = "".join(random.choice(characters) for _ in range(6))
     verification = verification_email(code=code)
@@ -258,12 +257,6 @@ def search_users(req: HttpRequest):
 
     return request_success({"results": result})
 
-
-@CheckRequire
-def add_friend(req: HttpRequest):
-    jwt_token = req.headers.get("Authorization")
-    if not jwt_token:
-        return request_failed(-2, "Invalid or expired JWT", 401)
 @CheckRequire
 def add_friend(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
@@ -273,16 +266,10 @@ def add_friend(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
     if req.method != "POST":
         return BAD_METHOD
-    if req.method != "POST":
-        return BAD_METHOD
 
-    body = json.loads(req.body.decode("utf-8"))
     body = json.loads(req.body.decode("utf-8"))
 
     target_id = require(body, "target_id", "int", err_msg="Missing or error type of [target_id]")
@@ -308,13 +295,7 @@ def add_friend(req: HttpRequest):
 
     if existing_conversation:
         return request_failed(-4, "Already friends", 403)
-    if existing_conversation:
-        return request_failed(-4, "Already friends", 403)
 
-    # 验证是否已经发送过好友请求
-    existing_request = Request.objects.filter(
-        sender=user_cur, receiver=user, status=0
-    ).exists()
     # 验证是否已经发送过好友请求
     existing_request = Request.objects.filter(
         sender=user_cur, receiver=user, status=0
@@ -336,16 +317,9 @@ def add_friend(req: HttpRequest):
         )
 
     new_request.save()
-    new_request.save()
 
     return request_success({"message": "申请成功"})
-    return request_success({"message": "申请成功"})
 
-@CheckRequire
-def get_friend_requests(req: HttpRequest):
-    jwt_token = req.headers.get("Authorization")
-    if not jwt_token:
-        return request_failed(-2, "Invalid or expired JWT", 401)
 @CheckRequire
 def get_friend_requests(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
@@ -355,19 +329,12 @@ def get_friend_requests(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-    if req.method != "GET":
-        return BAD_METHOD
     if req.method != "GET":
         return BAD_METHOD
 
     user_email = User.objects.filter(id=payload["id"]).first().email
-    user_email = User.objects.filter(id=payload["id"]).first().email
 
-    cur_user_id = User.objects.filter(email=user_email).first().id
     cur_user_id = User.objects.filter(email=user_email).first().id
 
     if not Request.objects.filter(receiver__email=user_email).exists():
@@ -391,13 +358,7 @@ def get_friend_requests(req: HttpRequest):
     ]
 
     return request_success({"requests": request_list})
-    return request_success({"requests": request_list})
 
-@CheckRequire
-def friend_request_handle(req: HttpRequest):
-    jwt_token = req.headers.get("Authorization")
-    if not jwt_token:
-        return request_failed(-2, "Invalid or expired JWT", 401)
 @CheckRequire
 def friend_request_handle(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
@@ -407,27 +368,17 @@ def friend_request_handle(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-    if req.method not in ["POST", "DELETE"]:
-        return BAD_METHOD
     if req.method not in ["POST", "DELETE"]:
         return BAD_METHOD
 
     body = json.loads(req.body.decode("utf-8"))
     sender_user_id = require(body, "sender_user_id", "int", err_msg="Missing or error type of [sender_user_id]")
     receiver_user_id = require(body, "receiver_user_id", "int", err_msg="Missing or error type of [receiver_user_id]")
-    body = json.loads(req.body.decode("utf-8"))
-    sender_user_id = require(body, "sender_user_id", "int", err_msg="Missing or error type of [sender_user_id]")
-    receiver_user_id = require(body, "receiver_user_id", "int", err_msg="Missing or error type of [receiver_user_id]")
-
+    
     sender = User.objects.filter(id=sender_user_id).first()
     receiver = User.objects.filter(id=receiver_user_id).first()
-    sender = User.objects.filter(id=sender_user_id).first()
-    receiver = User.objects.filter(id=receiver_user_id).first()
-
+    
     if not receiver or receiver.deleted == True:
         return request_failed(-1, "User deleted", 404)
     if not sender or sender.deleted == True:
@@ -455,11 +406,7 @@ def friend_request_handle(req: HttpRequest):
         new_conversation.members.add(sender, receiver)
 
         return request_success({"message": "已接受好友申请"})
-        return request_success({"message": "已接受好友申请"})
 
-    elif req.method == "DELETE":
-        # 拒绝好友请求
-        request = Request.objects.filter(sender=sender, receiver=receiver).first()
     elif req.method == "DELETE":
         # 拒绝好友请求
         request = Request.objects.filter(sender=sender, receiver=receiver).first()
@@ -467,7 +414,6 @@ def friend_request_handle(req: HttpRequest):
         request.status = 2
         request.save()
 
-        return request_success({"message": "已拒绝该好友申请"})
         return request_success({"message": "已拒绝该好友申请"})
 
 
