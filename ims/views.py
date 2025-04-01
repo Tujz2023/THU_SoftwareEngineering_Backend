@@ -6,6 +6,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import random
+import datetime
 import string
 
 from ims.models import (
@@ -235,6 +236,8 @@ def search_users(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
+    user_cur = User.objects.filter(id=payload["id"]).first()
 
     if req.method != "GET":
         return BAD_METHOD
@@ -255,6 +258,7 @@ def search_users(req: HttpRequest):
             "name": user.name,
             "email": user.email,
             "avatar": user.avatar,
+            "is_friend": Conversation.objects.filter(type=0).filter(members=user_cur).filter(members=user).exists(),
             "deleted": user.deleted,
         }
         for user in users
@@ -263,137 +267,158 @@ def search_users(req: HttpRequest):
     return request_success({"results": result})
 
 
-# @CheckRequire
-# def add_friend(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def add_friend(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     if req.method != "POST":
-#         return BAD_METHOD
+    if req.method != "POST":
+        return BAD_METHOD
 
-#     body = json.loads(req.body.decode("utf-8"))
+    body = json.loads(req.body.decode("utf-8"))
 
-#     user_email = User.objects.filter(id=payload["id"]).first().email
-#     target_id = require(body, "target_id", "int", err_msg="Missing or error type of [target_id]")
-#     message = require(body, "message", "string", err_msg="Missing or error type of [message]")
+    target_id = require(body, "target_id", "int", err_msg="Missing or error type of [target_id]")
+    message = require(body, "message", "string", err_msg="Missing or error type of [message]")
 
-#     user_cur = User.objects.filter(email=user_email).first()
+    user_cur = User.objects.filter(id=payload["id"]).first()
 
-#     # 验证被添加用户是否存在
-#     user = User.objects.filter(id=target_id).first()
-#     if not user:
-#         return request_failed(1, "User not found", 404)
+    # 验证被添加用户是否存在
+    user = User.objects.filter(id=target_id).first()
 
-#     # 验证当前用户是否已经是好友（通过会话conversation来判断是否为好友）
-#     existing_conversation = Conversation.objects.filter(
-#         type=0  # 私聊类型
-#     ).filter(members=user).filter(members=user_cur).exists()
+    if user == user_cur:
+        return request_failed(-6, "Can not add yourself as friend", 403)
 
-#     if existing_conversation:
-#         return request_failed(-4, "Already friends", 403)
+    if not user:
+        return request_failed(-1, "User not found or deleted", 404)
+    if user.deleted == True:
+        return request_failed(-1, "User not found or deleted", 404)
 
-#     # 验证是否已经发送过好友请求
-#     existing_request = Request.objects.filter(
-#         sender=user_cur, receiver=user, status=0
-#     ).exists()
+    # 验证当前用户是否已经是好友（通过会话conversation来判断是否为好友）
+    existing_conversation = Conversation.objects.filter(
+        type=0  # 私聊类型
+    ).filter(members=user).filter(members=user_cur).exists()
 
-#     if existing_request:
-#         return request_failed(-5, "Friend request already sent", 403)
+    # existing_conversation = Conversation.objects.filter(
+    #     type=0,  # 私聊类型
+    #     members__in=[user, user_cur]
+    # ).exists()
 
-#     new_request = Request(
-#         sender=user_cur,
-#         receiver=user,
-#         message=message if message else "Hello, I want to add you as a friend.",
-#     )
+    if existing_conversation:
+        return request_failed(-4, "Already friends", 403)
 
-#     new_request.save()
+    # 验证是否已经发送过好友请求
+    existing_request = Request.objects.filter(
+        sender=user_cur, receiver=user, status=0
+    ).exists()
 
-#     return request_success({"message": "申请成功"})
+    if existing_request:
+        return request_failed(-5, "Friend request already sent", 403)
 
-# @CheckRequire
-# def get_friend_requests(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+    new_request = Request(
+        sender=user_cur,
+        receiver=user,
+        message=message if message else "Hello, I want to add you as a friend.",
+    )
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    new_request.save()
 
-#     if req.method != "GET":
-#         return BAD_METHOD
+    return request_success({"message": "申请成功"})
 
-#     user_email = User.objects.filter(id=payload["id"]).first().email
+@CheckRequire
+def get_friend_requests(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     cur_user_id = User.objects.filter(email=user_email).first().id
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     friend_requests = Request.objects.filter(receiver__email=user_email).order_by("-time")  # 按申请时间降序排列
+    if req.method != "GET":
+        return BAD_METHOD
 
-#     # 构造返回的请求列表
-#     request_list = [
-#         {
-#             "sender_user_id": req.sender.id,
-#             "receiver_user_id": cur_user_id,
-#             "user_email": req.sender.email,
-#             "user_name": req.sender.name,
-#             "avatar": req.sender.avatar,
-#             "message": req.message,
-#             "created_at":req.time,
-#             "status": req.status
-#         }
-#         for req in friend_requests
-#     ]
+    user_email = User.objects.filter(id=payload["id"]).first().email
 
-#     return request_success({"requests": request_list})
+    cur_user_id = User.objects.filter(email=user_email).first().id
 
-# @CheckRequire
-# def friend_request_handle(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+    if not Request.objects.filter(receiver__email=user_email).exists():
+        return request_failed(-7, "No friend request", 403)
+    
+    friend_requests = Request.objects.filter(receiver__email=user_email).order_by("-time")  # 按申请时间降序排列
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    # 构造返回的请求列表
+    request_list = [
+        {
+            "sender_user_id": req.sender.id,
+            "receiver_user_id": cur_user_id,
+            "user_email": req.sender.email,
+            "user_name": req.sender.name,
+            "avatar": req.sender.avatar,
+            "message": req.message,
+            "created_at": datetime.datetime.fromtimestamp(req.time).strftime('%Y-%m-%d %H:%M:%S'),
+            "status": req.status
+        }
+        for req in friend_requests
+    ]
 
-#     if req.method not in ["POST", "DELETE"]:
-#         return BAD_METHOD
+    return request_success({"requests": request_list})
 
-#     body = json.loads(req.body.decode("utf-8"))
-#     sender_user_id = require(body, "sender_user_id", "int", err_msg="Missing or error type of [sender_user_id]")
-#     receiver_user_id = require(body, "receiver_user_id", "int", err_msg="Missing or error type of [receiver_user_id]")
+@CheckRequire
+def friend_request_handle(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     sender = User.objects.filter(id=sender_user_id).first()
-#     receiver = User.objects.filter(id=receiver_user_id).first()
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     if not receiver:
-#         return request_failed(-1, "User deleted", 404)
+    if req.method not in ["POST", "DELETE"]:
+        return BAD_METHOD
 
-#     if req.method == "POST":
-#         # 处理好友请求
-#         request = Request.objects.filter(sender=sender, receiver=receiver).first()
-#         request.status = 2
-#         request.save()
+    body = json.loads(req.body.decode("utf-8"))
+    sender_user_id = require(body, "sender_user_id", "int", err_msg="Missing or error type of [sender_user_id]")
+    receiver_user_id = require(body, "receiver_user_id", "int", err_msg="Missing or error type of [receiver_user_id]")
 
-#         new_conversation = Conversation(type=0)
-#         new_conversation.save()
-#         new_conversation.members.add(sender, receiver)
+    sender = User.objects.filter(id=sender_user_id).first()
+    receiver = User.objects.filter(id=receiver_user_id).first()
 
-#         return request_success({"message": "已接受好友申请"})
+    if not receiver or receiver.deleted == True:
+        return request_failed(-1, "User deleted", 404)
+    if not sender or sender.deleted == True:
+        return request_failed(-1, "User deleted", 404)
+    
+    if not Request.objects.filter(sender=sender, receiver=receiver).exists():
+        return request_failed(-5, "Request not found", 403)
 
-#     elif req.method == "DELETE":
-#         # 拒绝好友请求
-#         request = Request.objects.filter(sender=sender, receiver=receiver).first()
+    if Conversation.objects.filter(type=0).filter(members=sender).filter(members=receiver).exists():
+        return request_failed(-4, "Already friends", 403)
 
-#         request.status = 1
-#         request.save()
+    if req.method == "POST":
+        # 处理好友请求
+        request = Request.objects.filter(sender=sender, receiver=receiver).first()
+        request.status = 1
+        request.save()
 
-#         return request_success({"message": "已拒绝该好友申请"})
+        new_conversation = Conversation(type=0)
+        new_conversation.save()
+        new_conversation.members.add(sender, receiver)
+
+        return request_success({"message": "已接受好友申请"})
+
+    elif req.method == "DELETE":
+        # 拒绝好友请求
+        request = Request.objects.filter(sender=sender, receiver=receiver).first()
+
+        request.status = 2
+        request.save()
+
+        return request_success({"message": "已拒绝该好友申请"})
 
 
 # @CheckRequire

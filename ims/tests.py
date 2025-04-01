@@ -1,6 +1,14 @@
 import random
 from django.test import TestCase, Client
-from ims.models import User
+from ims.models import (
+    Conversation,
+    User,
+    Message,
+    Request,
+    Invitation,
+    Group,
+    Interface,
+)
 import datetime
 import hashlib
 import hmac
@@ -15,10 +23,18 @@ from utils.utils_crypto import encrypt_text, decrypt_text
 class ImsTests(TestCase):
     # Initializer
     def setUp(self):
-        User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password=encrypt_text("123456"), user_info="tujz's account")
+        self.holder = User.objects.create(email="tujz23@mails.tsinghua.edu.cn", name="tujz", password=encrypt_text("123456"), user_info="tujz's account")
         self.holder_id = User.objects.filter(email="tujz23@mails.tsinghua.edu.cn").first().id
         User.objects.create(email="delete@mails.com", name="delete", password=encrypt_text("123456"), deleted=True)
         self.delete_id = User.objects.filter(email='delete@mails.com').first().id
+        self.holder_login = {"email": "tujz23@mails.tsinghua.edu.cn", "password": encrypt_text("123456")}
+
+
+    # def test_a(self):
+    #     new_conversation = Conversation(type=0)
+    #     new_conversation.members.add(self.holder)
+    #     new_conversation.save()
+    #     print("ok!")
 
     # ! Utility functions
     def generate_jwt_token(self, id: int, payload: dict, salt: str):
@@ -268,3 +284,171 @@ class ImsTests(TestCase):
             self.assertEqual(users[i].email, results[i]['email'])
             self.assertEqual(users[i].name, results[i]['name'])
             self.assertEqual(users[i].deleted, results[i]['deleted'])
+
+    # * Utility functions
+    def login_for_test(self, data):
+        return self.client.post('/account/login', data=data, content_type='application/json').json()['token']
+
+    def add_friend_for_test(self, token, data):
+        headers = {"HTTP_AUTHORIZATION": token}
+        return self.client.post('/add_friend', data=data, **headers, content_type='application/json')
+
+    def test_search_users_friend(self):
+        token = self.login_for_test(self.holder_login)
+
+    # * Tests for friends portion
+    def test_add_friend_user_not_found1(self):
+        token = self.login_for_test(self.holder_login)
+        data = {"target_id": 3, "message": "Hello"}
+        res = self.add_friend_for_test(token, data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+
+    def test_add_friend_user_not_found2(self):
+        token = self.login_for_test(self.holder_login)
+        temp_user = User.objects.create(email="temp_email@email.com", name='temp_user', password=encrypt_text('123456'), deleted=True)
+        data = {"target_id": temp_user.id, "message": "Hello"}
+        res = self.add_friend_for_test(token, data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+
+    def test_add_friend_youself(self):
+        token = self.login_for_test(self.holder_login)
+        data = {"target_id": self.holder_id, "message": "Hello"}
+        res = self.add_friend_for_test(token, data)
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -6)
+    
+    def test_add_friend_success_and_already_send(self):
+        token = self.login_for_test(self.holder_login)
+        temp_user = User.objects.create(email="temp_email@email.com", name='temp_user', password=encrypt_text('123456'))
+        data = {"target_id": temp_user.id, "message": "Hello there!"}
+        res = self.add_friend_for_test(token, data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        data = {"target_id": temp_user.id, "message": "Hello there too!"}
+        res = self.add_friend_for_test(token, data)
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -5)
+        this_request = Request.objects.filter(sender=self.holder, receiver=temp_user, status=0).first()
+        # time = this_request.time
+        # dt_object = datetime.datetime.fromtimestamp(time)
+        # readable_time = dt_object.strftime('%Y-%m-%d %H:%M:%S')
+        # print(f'\n{readable_time}\n')
+        self.assertEqual(this_request.message, "Hello there!")
+
+    def test_add_friend_already_friend(self):
+        token = self.login_for_test(self.holder_login)
+        temp_user = User.objects.create(email="temp_email@email.com", name='temp_user', password=encrypt_text('123456'))
+        # TODO: 
+    
+    def test_get_friend_requests_success1(self):
+        token = self.login_for_test(self.holder_login)
+        temp_user1 = User.objects.create(email="temp_email1@email.com", name='temp_user1', password=encrypt_text('123456'))
+        temp_user2 = User.objects.create(email="temp_email2@email.com", name='temp_user2', password=encrypt_text('123456'))
+        temp_user3 = User.objects.create(email="temp_email3@email.com", name='temp_user3', password=encrypt_text('123456'))
+        temp_user4 = User.objects.create(email="temp_email4@email.com", name='temp_user4', password=encrypt_text('123456'))
+        temp_user5 = User.objects.create(email="temp_email5@email.com", name='temp_user5', password=encrypt_text('123456'))
+        temp_users = [temp_user1, temp_user2, temp_user3, temp_user4, temp_user5]
+        tokens = []
+        for user in temp_users:
+            data = {"email": user.email, "password": user.password}
+            tokens.append(self.login_for_test(data)) 
+        data1 = {"target_id": self.holder.id, "message": "Hello from temp_user1!"}
+        data2 = {"target_id": self.holder.id, "message": "Hello from temp_user3!"}
+        data3 = {"target_id": self.holder.id, "message": "Hello from temp_user4!"}
+        data4 = {"target_id": self.holder.id, "message": "Hello from temp_user5!"}
+        data5 = {"target_id": temp_user2.id, "message": "Hello from tujz!"}
+        data6 = {"target_id": temp_user2.id, "message": "Hello from temp_user4!"}
+        datas = [[tokens[0], data1], [tokens[2], data2], [tokens[3], data3], [tokens[4], data4], [token, data5], [tokens[3], data6]]
+        for data in datas:
+            self.add_friend_for_test(data[0], data[1])
+        headers = {"HTTP_AUTHORIZATION": token}
+        res = self.client.get('/friend_requests', **headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        # print('begin res\n', res.json()['requests'], 'end res\n')
+        headers = {"HTTP_AUTHORIZATION": tokens[1]}
+        res = self.client.get('/friend_requests', **headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        # print('begin res\n', res.json()['requests'], 'end res\n')
+        headers = {"HTTP_AUTHORIZATION": tokens[2]}
+        res = self.client.get('/friend_requests', **headers)
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -7)
+
+    def test_get_friend_requests_success2(self):
+        token = self.login_for_test(self.holder_login)
+        # TODO: 修改一些状态，让0，1，2，3均存在
+    
+    def test_friend_request_handle_deleted(self):
+        token = self.login_for_test(self.holder_login)
+        temp_user1 = User.objects.create(email="temp_email1@email.com", name='temp_user1', password=encrypt_text('123456'))
+        data = {"email": temp_user1.email, "password": temp_user1.password}
+        token1 = self.login_for_test(data)
+        temp_user2 = User.objects.create(email="temp_email2@email.com", name='temp_user2', password=encrypt_text('123456'))
+        data = {"email": temp_user2.email, "password": temp_user2.password}
+        token2 = self.login_for_test(data)
+        data1 = {"target_id": self.holder.id, "message": "Hello from temp_user1!"}
+        data2 = {"target_id": self.holder.id, "message": "Hello from temp_user2!"}
+        self.add_friend_for_test(token1, data1)
+        self.add_friend_for_test(token2, data2)
+        temp_user1.deleted = True
+        temp_user2.deleted = True
+        temp_user1.save()
+        temp_user2.save()
+        headers = {"HTTP_AUTHORIZATION": token}
+        data = {"sender_user_id": temp_user1.id, "receiver_user_id": self.holder_id}
+        res = self.client.post('/friend_request_handle', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+        data = {"sender_user_id": temp_user2.id, "receiver_user_id": self.holder_id}
+        res = self.client.delete('/friend_request_handle', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+    
+    def test_friend_request_handle_not_found(self):
+        token = self.login_for_test(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        temp_user1 = User.objects.create(email="temp_email1@email.com", name='temp_user1', password=encrypt_text('123456'))
+        data = {"sender_user_id": temp_user1.id, "receiver_user_id": self.holder_id}
+        res = self.client.post('/friend_request_handle', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -5)
+        res = self.client.delete('/friend_request_handle', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -5)
+
+    def test_friend_request_handle_already_friends(self):
+        token = self.login_for_test(self.holder_login)
+        # TODO: 两个人给对方互相发消息，一个人同意，另一个人也想同意或者删除
+
+    def test_friend_request_handle_success(self):
+        token = self.login_for_test(self.holder_login)
+        temp_user1 = User.objects.create(email="temp_email1@email.com", name='temp_user1', password=encrypt_text('123456'))
+        data = {"email": temp_user1.email, "password": temp_user1.password}
+        token1 = self.login_for_test(data)
+        temp_user2 = User.objects.create(email="temp_email2@email.com", name='temp_user2', password=encrypt_text('123456'))
+        data = {"email": temp_user2.email, "password": temp_user2.password}
+        token2 = self.login_for_test(data)
+        data1 = {"target_id": self.holder.id, "message": "Hello from temp_user1!"}
+        data2 = {"target_id": self.holder.id, "message": "Hello from temp_user2!"}
+        self.add_friend_for_test(token1, data1)
+        self.add_friend_for_test(token2, data2)
+        headers = {"HTTP_AUTHORIZATION": token}
+        data = {"sender_user_id": temp_user1.id, "receiver_user_id": self.holder_id}
+        res = self.client.post('/friend_request_handle', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(Conversation.objects.filter(type=0).filter(members=temp_user1).filter(members=self.holder).exists(), True)
+        self.assertEqual(Conversation.objects.filter(type=0).filter(members=self.holder).filter(members=temp_user1).exists(), True)
+        self.assertEqual(Request.objects.filter(sender=temp_user1, receiver=self.holder).first().status, 1)
+        data = {"sender_user_id": temp_user2.id, "receiver_user_id": self.holder_id}
+        res = self.client.delete('/friend_request_handle', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(Conversation.objects.filter(type=0).filter(members=temp_user2).filter(members=self.holder).exists(), False)
+        self.assertEqual(Conversation.objects.filter(type=0).filter(members=self.holder).filter(members=temp_user2).exists(), False)
+        self.assertEqual(Request.objects.filter(sender=temp_user2, receiver=self.holder).first().status, 2)
+        
