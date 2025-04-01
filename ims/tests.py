@@ -684,7 +684,7 @@ class ImsTests(TestCase):
         new_conv.save()
         new_conv.members.add(self.holder, temp_user1)
         headers1 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": temp_user1.email, "password": temp_user1.password})}
-        res = self.client.delete('/manage_friends', data = {"friend_id": 1}, **headers1, content_type = 'application/json')
+        res = self.client.delete('/manage_friends', data = {"friend_id": self.holder_id}, **headers1, content_type = 'application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
         self.assertEqual(Conversation.objects.filter(type=0).filter(members=self.holder).filter(members=temp_user1).exists(), False)
