@@ -251,6 +251,8 @@ PUT请求：
 
 该API用于查找指定昵称的用户。
 
+请求头需要带有JWT令牌。
+
 通过GET方式请求，请求携带参数为：
 
 ```json
@@ -274,6 +276,7 @@ PUT请求：
             "name": "userName",
             "email": "userEmail",
             "avatar": "userAvatarUrl",
+            "is_friend": True,      
             "deleted": True
         },
         {
@@ -281,6 +284,7 @@ PUT请求：
             "name": "userName",
             "email": "userEmail",
             "avatar": "userAvatarUrl",
+            "is_friend": False,
             "deleted": False
         }
     ]
@@ -291,6 +295,7 @@ PUT请求：
 - user_id: 用户ID
 - email: 用户邮箱
 - avatar: 用户头像URL
+- is_friend: 该用户是否是好友
 - deleted: 该用户是否已被注销
 
 请求失败时，错误相应的格式为：
@@ -310,21 +315,19 @@ PUT请求：
 
 该API用于向指定用户发送好友申请。
 
+请求头中需要包含代表当前用户的JWT令牌。
+
 通过POST方式请求，请求体为：
 
 ```json
 {
-    "user_email": "user_email",
     "target_id": "target_id",
     "message":"Hello",
-    "created_at": "2025-03-13T14:30:00Z"
 }
 ```
 
-- user_email: 发送好友申请的用户邮箱
 - target_id: 接收好友申请的用户ID
 - message: 申请消息
-- created_at: 申请时间
 
 响应：
 请求成功时，设置状态码为200OK，返回申请成功的消息，成功响应格式为:
@@ -347,9 +350,10 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若查找的用户或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若查找的用户或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found or deleted"。
 - 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。
 - 若已经向对方发送过好友请求但是对方并未处理，状态码403，错误码-5，错误信息"Friend request already sent"。
+- 若向自己发送好友请求，状态码403，错误码-6，错误信息"Can not add yourself as friend"。
 
 #### 好友申请列表/friend_requests
 
@@ -377,7 +381,7 @@ PUT请求：
             "avatar": "AvatarUrl",
             "message": "申请消息",
             "created_at": "2025-03-13T14:30:00Z", // 申请时间
-            "status": 0 // 0: 等待处理，1: 已同意，2: 已拒绝
+            "status": 0 // 0: 等待处理，1: 已同意，2: 已拒绝，3：已成为好友
         },
         {
             "sender_user_id": "user_id",
@@ -387,7 +391,7 @@ PUT请求：
             "avatar": "AvatarUrl",
             "message": "申请消息",
             "created_at": "2025-03-13T14:30:00Z", // 申请时间
-            "status": 1 // 0: 等待处理，1: 已同意，2: 已拒绝
+            "status": 1 // 0: 等待处理，1: 已同意，2: 已拒绝，3：已成为好友
         }
     ]
 }
@@ -401,8 +405,7 @@ PUT请求：
 - avatar: 申请者头像URL
 - message: 申请消息
 - created_at: 申请时间
-- timestamp: 申请时间
-- status: 申请状态，0: 等待处理，1: 已同意，2: 已拒绝
+- status: 申请状态，0: 等待处理，1: 已同意，2: 已拒绝，3：已成为好友(不是通过自己同意加的好友)
 
 请求失败时，错误相应的格式为：
 
@@ -414,8 +417,9 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若不存在好友申请，状态码403，错误码-7，错误信息"No friend request"。
 
-#### 处理好友申请/friend_requests/
+#### 处理好友申请/friend_request_handle
 
 该API用于处理（同意或拒绝）指定好友申请。允许POST和DELETE请求。
 
@@ -423,8 +427,8 @@ PUT请求：
 
 ```json
 {
-    "send_user_id": "sender_id",
-    "receiver_user_id": "receiver_id"
+    "sender_user_id": sender_id,
+    "receiver_user_id": receiver_id
 }
 ```
 
@@ -432,7 +436,7 @@ PUT请求：
 - receiver_user_id: 接收好友申请的用户ID
 
 响应：
-请求成功时，设置状态码为200OK，返回拒绝好友申请成功的消息，成功响应格式为:
+请求成功时，设置状态码为200OK，返回接收好友申请成功的消息，成功响应格式为:
 
 ```json
 {
@@ -452,19 +456,21 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若处理的用户已经被注销，状态码404，错误码-1，错误信息"User deleted"。
+- 若处理的用户或发送消息的用户已经被注销，状态码404，错误码-1，错误信息"User deleted"。
+- 若该好友申请不存在，状态码403，错误码-5，错误信息"Request not found"。
+- 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。
 
 DELETE请求：
 
 ```json
 {
-    "send_user_id": "sender_id",
-    "receiver_user_id": "receiver_id"
+    "sender_user_id": sender_id,
+    "receiver_user_id": receiver_id
 }
 ```
 
 响应：
-请求成功时，设置状态码为200OK，返回删除好友申请成功的消息，成功响应格式为:
+请求成功时，设置状态码为200OK，返回拒绝好友申请成功的消息，成功响应格式为:
 
 ```json
 {
@@ -484,7 +490,9 @@ DELETE请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若处理的用户已经被注销，状态码404，错误码-1，错误信息"用户已注销"。
+- 若处理的用户或发送消息的用户已经被注销，状态码404，错误码-1，错误信息"User deleted"。
+- 若该好友申请不存在，状态码403，错误码-5，错误信息"Request not found"。
+- 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。
 
 #### 分组管理/groups
 

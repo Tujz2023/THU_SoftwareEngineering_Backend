@@ -48,7 +48,7 @@ class Conversation(models.Model):
     ConvName = models.CharField(max_length=MAX_CHAR_LENGTH, default="群组")
     created_time = models.FloatField(default=utils_time.get_timestamp)
     avatar = models.CharField(max_length=MAX_AVATAR_LENGTH)
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="creator")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="creator")
     managers = models.ManyToManyField(User, related_name="managers")
     last_message_id = models.IntegerField(default=-1)
     
@@ -112,7 +112,7 @@ class Request(models.Model):
         blank=True,
     )
     time = models.FloatField(default=utils_time.get_timestamp)
-    status = models.IntegerField(default=0) # 0-waiting, 1-rejected, 2-accepted
+    status = models.IntegerField(default=0) # 0-waiting, 1-accepted, 2-rejected, 3-already friends
 
     class Meta:
         indexes = [models.Index(fields=["id"])]
