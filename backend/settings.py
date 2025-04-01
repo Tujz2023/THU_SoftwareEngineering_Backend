@@ -88,18 +88,18 @@ ASGI_APPLICATION = 'backend.asgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
     # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
-    #     'NAME': 'postgres',  # 默认的数据库名称
-    #     'USER': 'postgres',  # 默认的用户名
-    #     'PASSWORD': 'eyJhbGci',  # 你在Dockerfile中设置的密码
-    #     'HOST': 'PostSQL.eyJhbGci.secoder.local',  # PostgreSQL容器的外部IP地址
-    #     'PORT': 5432,  # PostgreSQL默认端口
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
     # }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'postgres',  # 默认的数据库名称
+        'USER': 'postgres',  # 默认的用户名
+        'PASSWORD': 'eyJhbGci',  # 你在Dockerfile中设置的密码
+        'HOST': 'PostSQL.eyJhbGci.secoder.local',  # PostgreSQL容器的外部IP地址
+        'PORT': 5432,  # PostgreSQL默认端口
+    }
 }
 
 
