@@ -158,10 +158,10 @@ def delete(req: HttpRequest):
 def account_info(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
     if jwt_token == None or jwt_token == "":
-        return request_failed(2, "Invalid or expired JWT", status_code=401)
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     payload = check_jwt_token(jwt_token)
     if payload is None:
-        return request_failed(2, "Invalid or expired JWT", status_code=401)
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     user = User.objects.filter(id=payload["id"]).first()
     # if jwt is valid, user must exist
     if req.method == "GET":
