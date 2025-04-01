@@ -39,7 +39,7 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     'daphne',
     'ims',
-    'corsheaders'
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
