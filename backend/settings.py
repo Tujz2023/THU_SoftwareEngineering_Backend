@@ -127,7 +127,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'ASIA/SHANGHAI'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
@@ -147,8 +147,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.163.com'  # SMTP 服务器地址
 EMAIL_PORT = 25  # SMTP 端口
-EMAIL_HOST_USER = 'instant_message@163.com'  # 你的邮箱地址
-EMAIL_HOST_PASSWORD = ''  # 你的邮箱密码
+EMAIL_HOST_USER = 'instant_message@163.com'
+EMAIL_HOST_PASSWORD = ''
 EMAIL_USE_TLS = True  # 是否使用 TLS 加密
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'instant_message@163.com'  # 默认发件人地址
