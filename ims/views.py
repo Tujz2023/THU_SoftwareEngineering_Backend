@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from .email import verification_email
+from ims.email import verification_email
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
@@ -58,7 +58,6 @@ def login(req: HttpRequest):
     return_data = {"token": generate_jwt_token(user.id)}
     return request_success(return_data)  # msg: Succeed.
 
-
 @CheckRequire
 def register(req: HttpRequest):
     if req.method != "POST":
@@ -94,7 +93,7 @@ def register(req: HttpRequest):
         return_data = {"token": generate_jwt_token(user.id), "message": "注册成功"}
         return request_success(return_data)
 
-
+@CheckRequire
 def send_verification_email(req: HttpRequest):
     if req.method != "POST":
         return BAD_METHOD
@@ -104,7 +103,6 @@ def send_verification_email(req: HttpRequest):
     email = require(body, "email", "string", err_msg="Missing or error type of [email]")
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return request_failed(1, "Invalid email", 400)
-
     characters = string.digits  # 只使用数字
     code = "".join(random.choice(characters) for _ in range(6))
     verification = verification_email(code=code)
@@ -259,7 +257,6 @@ def search_users(req: HttpRequest):
 
     return request_success({"results": result})
 
-
 @CheckRequire
 def add_friend(req: HttpRequest):
     jwt_token = req.headers.get("Authorization")
@@ -378,10 +375,10 @@ def friend_request_handle(req: HttpRequest):
     body = json.loads(req.body.decode("utf-8"))
     sender_user_id = require(body, "sender_user_id", "int", err_msg="Missing or error type of [sender_user_id]")
     receiver_user_id = require(body, "receiver_user_id", "int", err_msg="Missing or error type of [receiver_user_id]")
-
+    
     sender = User.objects.filter(id=sender_user_id).first()
     receiver = User.objects.filter(id=receiver_user_id).first()
-
+    
     if not receiver or receiver.deleted == True:
         return request_failed(-1, "User deleted", 404)
     if not sender or sender.deleted == True:
@@ -604,55 +601,58 @@ def friend_request_handle(req: HttpRequest):
 #         group.members.remove(member)
 
 
-# @CheckRequire
-# def get_friends_list(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def get_friends_list(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     if req.method != "GET":
-#         return BAD_METHOD
+    if req.method != "GET":
+        return BAD_METHOD
 
-#     user_email = User.objects.filter(id=payload["id"]).first().email
+    user_email = User.objects.filter(id=payload["id"]).first().email
 
-#     # 从对话中获取好友列表中好友的email列表
-#     friends_emails = (
-#         Conversation.objects.filter(type=0).filter(members__email=user_email)
-#         .values_list("members__email", flat=True)
-#         .exclude(members__email=user_email)  # 排除自己
-#         .distinct()  # 避免重复
-#     )
+    if not Conversation.objects.filter(type=0).filter(members__email=user_email).exists():
+        return request_failed(-1, "暂时没有好友", 404)
 
-#     friends = User.objects.filter(email__in=friends_emails)
+    # 从对话中获取好友列表中好友的email列表
+    friends_emails = (
+        User.objects.filter(conversation__members__email=user_email)
+        .exclude(email=user_email)
+        .values_list('email', flat=True)
+        .distinct()
+    )
 
-#     friends_list = [
-#         {
-#             "id": friend.id,
-#             "email": friend.email,
-#             "name": friend.name,
-#             "avatar": friend.avatar,
-#         }
-#         for friend in friends
-#     ]
+    friends = User.objects.filter(email__in=friends_emails)
 
-#     return request_success({"friends": friends_list})
+    friends_list = [
+        {
+            "id": friend.id,
+            "email": friend.email,
+            "name": friend.name,
+            "avatar": friend.avatar,
+        }
+        for friend in friends
+    ]
 
-# @CheckRequire
-# def manage_friends(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+    return request_success({"friends": friends_list})
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+@CheckRequire
+def manage_friends(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     if req.method not in ["GET", "PUT", "DELETE"]:
-#         return BAD_METHOD
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+
+    if req.method not in ["GET", "PUT", "DELETE"]:
+        return BAD_METHOD
 
 #     # 查看好友详情
 #     if req.method == "GET":
@@ -686,27 +686,28 @@ def friend_request_handle(req: HttpRequest):
 
 #         return request_success(return_data)
 
-#     # 删除好友
-#     elif req.method == "DELETE":
-#         body = json.loads(req.body.decode("utf-8"))
-#         user_email = payload["email"]
-#         friend_id = require(body, "friend_id", "int", err_msg="Missing or error type of [friend_id]")
+    # 删除好友
+    if req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
+        user_id = payload["id"]
+        friend_id = require(body, "friend_id", "int", err_msg="Missing or error type of [friend_id]")
+        
+        user = User.objects.filter(id=user_id).first()
+        friend = User.objects.filter(id=friend_id).first()
 
-#         user = User.objects.filter(email=user_email).first()
-#         if not user:
-#             return request_failed(-1, "User not found", 404)
+        if not friend:
+            return request_failed(-1, "Friend not found", 404)
+        
+        if not Conversation.objects.filter(type=0).filter(members=user).filter(members=friend).exists():
+            return request_failed(-3, "Already not friend", 404)
 
-#         friend = User.objects.filter(id=friend_id).first()
-#         if not friend:
-#             return request_failed(-1, "Friend not found", 404)
+        Conversation.objects.filter(type=0).filter(members=user).filter(members=friend).delete()
 
-#         Conversation.objects.filter(type=0).filter(members=user).filter(members=friend).delete()
+        # 删除好友之间的请求
+        Request.objects.filter(sender=user, receiver=friend).delete()
+        Request.objects.filter(sender=friend, receiver=user).delete()
 
-#         # 删除好友之间的请求
-#         Request.objects.filter(sender=user, receiver=friend).delete()
-#         Request.objects.filter(sender=friend, receiver=user).delete()
-
-#         return request_success({"message": "删除好友成功"})
+        return request_success({"message": "删除好友成功"})
 
 #     # 好友分组操作
 #     elif req.method == "PUT":

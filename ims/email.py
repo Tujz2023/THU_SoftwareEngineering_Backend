@@ -18,5 +18,3 @@ class verification_email:
             </body>
             </html>"""
         self.plain_message = strip_tags(self.message)
-        self.sendtime = datetime.now()
-        self.expiration = self.timestamp + timedelta(minutes=5)
