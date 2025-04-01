@@ -303,11 +303,6 @@ def add_friend(req: HttpRequest):
         type=0  # 私聊类型
     ).filter(members=user).filter(members=user_cur).exists()
 
-    # existing_conversation = Conversation.objects.filter(
-    #     type=0,  # 私聊类型
-    #     members__in=[user, user_cur]
-    # ).exists()
-
     if existing_conversation:
         return request_failed(-4, "Already friends", 403)
 
@@ -318,12 +313,18 @@ def add_friend(req: HttpRequest):
 
     if existing_request:
         return request_failed(-5, "Friend request already sent", 403)
-
-    new_request = Request(
-        sender=user_cur,
-        receiver=user,
-        message=message if message else "Hello, I want to add you as a friend.",
-    )
+    
+    if Request.objects.filter(sender=user_cur, receiver=user).exists():
+        new_request = Request.objects.filter(sender=user_cur, receiver=user).first()
+        new_request.status = 0
+        new_request.message = message if message else "Hello, I want to add you as a friend."
+        new_request.time = get_timestamp()
+    else:
+        new_request = Request(
+            sender=user_cur,
+            receiver=user,
+            message=message if message else "Hello, I want to add you as a friend.",
+        )
 
     new_request.save()
 
@@ -404,6 +405,11 @@ def friend_request_handle(req: HttpRequest):
         request = Request.objects.filter(sender=sender, receiver=receiver).first()
         request.status = 1
         request.save()
+
+        if Request.objects.filter(sender=receiver, receiver=sender, status=0).exists():
+            another_request = Request.objects.filter(sender=receiver, receiver=sender, status=0).first()
+            another_request.status = 3
+            another_request.save()
 
         new_conversation = Conversation(type=0)
         new_conversation.save()
