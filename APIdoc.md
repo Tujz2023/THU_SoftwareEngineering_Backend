@@ -617,12 +617,14 @@ GET请求：
                 "email": "user_email",
                 "name": "userName",
                 "avatar": "AvatarUrl",
+                "deleted": True
             },  
             {
                 "id": "user_id",
                 "email": "user_email",
                 "name": "userName",
                 "avatar": "AvatarUrl",
+                "deleted": False
             }
         ]
     }
@@ -637,6 +639,7 @@ GET请求：
 - email: 成员邮箱
 - name: 成员昵称
 - avatar: 成员头像URL
+- deleted: 成员账号是否注销
 
 请求失败时，错误相应的格式为：
 
@@ -759,12 +762,14 @@ GET请求：
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
+            "deleted": True
         },  
         {
             "id": "user_id",
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
+            "deleted": False
         }
     ]
 }
@@ -775,6 +780,7 @@ GET请求：
 - email: 成员邮箱
 - name: 成员昵称
 - avatar: 成员头像URL
+- deleted: 成员是否注销
 
 请求失败时，错误相应的格式为：
 
@@ -823,8 +829,8 @@ POST请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
-- 若成员不存在，状态码404，错误码-1，错误信息"Member not found"。
+- 若分组不存在，状态码404，错误码-3，错误信息"Group not found"。
+- 若成员不是自己的好友，状态码404，错误码-1，错误信息"Member is not friend"。
 - 若成员已在分组中，状态码400，错误码-3，错误信息"Member already in group"。
 
 ##### 删除分组成员
@@ -862,8 +868,7 @@ DELETE请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
-- 若成员不存在，状态码404，错误码-1，错误信息"Member not found"。
+- 若分组不存在，状态码404，错误码-3，错误信息"Group not found"。
 - 若成员不在分组中，状态码400，错误码-3，错误信息"Member not in group"。
 
 #### 好友列表/friends
@@ -887,12 +892,14 @@ DELETE请求：
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
+            "deleted": True
         },  
         {
             "id": "user_id",
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
+            "deleted": False
         }
     ]
 }
@@ -903,6 +910,7 @@ DELETE请求：
 - email: 好友邮箱
 - name: 好友昵称
 - avatar: 好友头像URL
+- deleted: 好友是否注销
 
 请求失败时，错误相应的格式为：
 
@@ -965,8 +973,8 @@ GET请求：
 - email: 好友邮箱
 - name: 好友昵称
 - avatar: 好友头像URL
-- `deleted`: 好友是否已注销
-- `groups`: 好友所在分组名称
+- deleted: 好友是否已注销
+- groups: 好友所在分组名称
 
 请求失败时，错误相应的格式为：
 
@@ -1019,49 +1027,6 @@ DELETE请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。
 - 若对方已经不是好友，状态码404，错误码-3，错误信息"Already not friend"。
-
-##### 好友分组操作
-
-PUT请求：
-
-需要使用authorization头部携带JWT令牌。
-请求体为：
-
-```json
-{
-    "friend_id": "friend_id",
-    "group_id": "group_id"
-}
-```
-
-- friend_id: 操作的好友ID
-- group_id: 要添加到的分组ID
-
-响应：
-请求成功时，设置状态码为200OK，返回操作好友分组成功的消息，成功响应格式为:
-
-```json
-{
-    "code": 0,
-    "info": "success",
-    "message": "添加好友到分组成功"
-}
-```
-
-请求失败时，错误相应的格式为：
-
-```json
-{  
-    "code": *,  
-    "info": "[error message]"
-}
-```
-
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。
-- 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。
-- 若分组不存在，状态码404，错误码-1，错误信息"Group not found"。
-- 若好友已经在该分组中，状态码400，错误码-3，错误信息"Friend already in group"。
 
 ### 在线会话
 

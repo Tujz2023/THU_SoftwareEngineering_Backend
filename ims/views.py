@@ -490,6 +490,8 @@ def manage_groups(req: HttpRequest):
                 "email": member.email,
                 "name": member.name,
                 "avatar": member.avatar,
+                # "avatar": "true" if member.avatar else "false",
+                "deleted": member.deleted
             }
             for member in group.members.all()
         ]
@@ -536,77 +538,79 @@ def manage_groups(req: HttpRequest):
         return request_success({"message": "删除分组成功"})
 
 
-# @CheckRequire
-# def manage_group_members(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def manage_group_members(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     if req.method not in ["GET", "POST", "DELETE"]:
-#         return BAD_METHOD
+    if req.method not in ["GET", "POST", "DELETE"]:
+        return BAD_METHOD
 
-#     # 查看分组成员列表
-#     if req.method == "GET":
-#         group_id = req.GET.get("group_id", "")
-#         group = Group.objects.filter(id=int(group_id)).first()
-#         if not group:
-#             return request_failed(-1, "Group not found", 404)
+    # 查看分组成员列表
+    if req.method == "GET":
+        group_id = req.GET.get("group_id", "")
+        group = Group.objects.filter(id=int(group_id)).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
 
-#         group_members = [
-#             {
-#                 "id": member.id,
-#                 "email": member.email,
-#                 "name": member.name,
-#                 "avatar": member.avatar,
-#             }
-#             for member in group.members.all()
-#         ]
+        group_members = [
+            {
+                "id": member.id,
+                "email": member.email,
+                "name": member.name,
+                "avatar": member.avatar,
+                # "avatar": "True" if member.avatar else "False",
+                "deleted": member.deleted
+            }
+            for member in group.members.all()
+        ]
 
-#         return request_success({"members": group_members})
+        return request_success({"members": group_members})
 
-#     # 添加分组成员
-#     elif req.method == "POST":
-#         body = json.loads(req.body.decode("utf-8"))
-#         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
-#         member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
+    # 添加分组成员
+    elif req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+        member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
 
-#         group = Group.objects.filter(id=group_id).first()
-#         if not group:
-#             return request_failed(-1, "Group not found", 404)
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-3, "Group not found", 404)
 
-#         member = User.objects.filter(id=member_id).first()
-#         if not member:
-#             return request_failed(-1, "Member not found", 404)
+        member = User.objects.filter(id=member_id).first()
+        user = User.objects.filter(id=payload['id']).first()
+        if not Conversation.objects.filter(type=0).filter(members=user).filter(members=member).exists():
+            return request_failed(-1, "Member is not friend", 404)
 
-#         if group.members.filter(id=member_id).exists():
-#             return request_failed(-3, "Member already in group", 400)
+        if group.members.filter(id=member_id).exists():
+            return request_failed(-3, "Member already in group", 400)
 
-#         group.members.add(member)
+        group.members.add(member)
 
-#         return request_success({"message": "添加分组成员成功"})
+        return request_success({"message": "添加分组成员成功"})
 
-#     # 删除分组成员
-#     elif req.method == "DELETE":
-#         body = json.loads(req.body.decode("utf-8"))
-#         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
-#         member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
+    # 删除分组成员
+    elif req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+        member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
 
-#         group = Group.objects.filter(id=group_id).first()
-#         if not group:
-#             return request_failed(-1, "Group not found", 404)
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-3, "Group not found", 404)
 
-#         member = User.objects.filter(id=member_id).first()
-#         if not member:
-#             return request_failed(-1, "Member not found", 404)
+        member = User.objects.filter(id=member_id).first()
 
-#         if not group.members.filter(id=member_id).exists():
-#             return request_failed(-3, "Member not in group", 400)
+        if not group.members.filter(id=member_id).exists():
+            return request_failed(-3, "Member not in group", 400)
 
-#         group.members.remove(member)
+        group.members.remove(member)
+        return request_success({"message": "删除分组成员成功"})
 
 
 @CheckRequire
@@ -644,6 +648,7 @@ def get_friends_list(req: HttpRequest):
             "email": friend.email,
             "name": friend.name,
             "avatar": friend.avatar,
+            "deleted": friend.deleted
         }
         for friend in friends
     ]
@@ -663,37 +668,39 @@ def manage_friends(req: HttpRequest):
     if req.method not in ["GET", "PUT", "DELETE"]:
         return BAD_METHOD
 
-#     # 查看好友详情
-#     if req.method == "GET":
-#         user_email = payload["email"]
-#         friend_id = req.GET.get("friend_id", "")
+    # 查看好友详情
+    if req.method == "GET":
+        friend_id = req.GET.get("friend_id", "")
 
-#         user = User.objects.filter(email=user_email).first()
-#         if not user:
-#             return request_failed(-1, "User not found", 404)
+        user = User.objects.filter(id=payload['id']).first()
+        if not user:
+            return request_failed(-1, "User not found", 404)
 
-#         friend = User.objects.filter(id=friend_id).first()
-#         if not friend:
-#             return request_failed(-1, "Friend not found", 404)
+        friend = User.objects.filter(id=friend_id).first()
+        if not friend:
+            return request_failed(-1, "Friend not found", 404)
+        if not Conversation.objects.filter(type=0).filter(members=friend).filter(members=user).exists():
+            return request_failed(-1, "Friend not found", 404)
 
-#         friend_groups = Group.objects.filter(members=friend)
+        friend_groups = Group.objects.filter(owner=user, members=friend)
 
-#         return_data = {
-#             "id": friend.id,
-#             "email": friend.email,
-#             "name": friend.name,
-#             "avatar": friend.avatar,
-#             "deleted": friend.deleted,
-#             "groups": [
-#                 {
-#                     "id": group.id,
-#                     "name": group.name,
-#                 }
-#                 for group in friend_groups
-#             ]
-#         }
+        return_data = {
+            "id": friend.id,
+            "email": friend.email,
+            "name": friend.name,
+            "avatar": friend.avatar,
+            # "avatar": "true" if friend.avatar else "false",
+            "deleted": friend.deleted,
+            "groups": [
+                {
+                    "id": group.id,
+                    "name": group.name,
+                }
+                for group in friend_groups
+            ]
+        }
 
-#         return request_success(return_data)
+        return request_success(return_data)
 
     # 删除好友
     if req.method == "DELETE":
@@ -716,33 +723,13 @@ def manage_friends(req: HttpRequest):
         Request.objects.filter(sender=user, receiver=friend).delete()
         Request.objects.filter(sender=friend, receiver=user).delete()
 
+        # 删除其所在分组的信息
+        if Group.objects.filter(owner=user).filter(members=friend).exists():
+            groups = Group.objects.filter(owner=user).filter(members=friend).all()
+            for group in groups:
+                group.members.remove(friend)
+
         return request_success({"message": "删除好友成功"})
-
-#     # 好友分组操作
-#     elif req.method == "PUT":
-#         body = json.loads(req.body.decode("utf-8"))
-#         user_email = payload["email"]
-#         friend_id = require(body, "friend_id", "int", err_msg="Missing or error type of [friend_id]")
-#         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
-
-#         user = User.objects.filter(email=user_email).first()
-#         if not user:
-#             return request_failed(-1, "User not found", 404)
-
-#         friend = User.objects.filter(id=friend_id).first()
-#         if not friend:
-#             return request_failed(-1, "Friend not found", 404)
-
-#         group = Group.objects.filter(id=group_id).first()
-#         if not group:
-#             return request_failed(-1, "Group not found", 404)
-
-#         if group.members.filter(id = friend.id).exists():
-#             return request_failed(-3, "Friend already in group", 400)
-
-#         group.members.add(friend)
-
-#         return request_success({"message": "添加好友到分组成功"})
 
 # @CheckRequire
 # def conv(req: HttpRequest):

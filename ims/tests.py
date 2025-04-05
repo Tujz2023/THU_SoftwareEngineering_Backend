@@ -760,11 +760,6 @@ class ImsTests(TestCase):
         #         print(member, end=' ')
         #     print(end='\n')
     
-    # def create_groups_for_test(self):
-    #     token = self.login_for_test(self.holder_login)
-    #     headers = {"HTTP_AUTHORIZATION": token}
-    #     self.add_five_friends_for_test(headers)
-
     def test_groups_no_groups(self):
         token = self.login_for_test(self.holder_login)
         headers = {"HTTP_AUTHORIZATION": token}
@@ -879,4 +874,134 @@ class ImsTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
     
+    def test_manage_groups_members_get(self):
+        token = self.login_for_test(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        data = {"name": "groupname1"}
+        res = self.client.post('/groups', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = {"name": "groupname2"}
+        res = self.client.post('/groups', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        res = self.client.get('/groups/members', {"group_id": "3"}, **headers)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+        res = self.client.get('/groups/members', {"group_id": "2"}, **headers)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['members'], [])
     
+    def add_five_friends_to_groups_for_test(self, headers):
+        self.add_five_friends_for_test(headers)
+        data = {"name": "groupname1"}
+        res = self.client.post('/groups', data=data, **headers, content_type='application/json')
+        data = {"name": "groupname2"}
+        res = self.client.post('/groups', data=data, **headers, content_type='application/json')
+        data = {"name": "groupname3"}
+        res = self.client.post('/groups', data=data, **headers, content_type='application/json')
+        data = {"group_id": "1", "member_id": "3"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = {"group_id": "1", "member_id": "5"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = {"group_id": "1", "member_id": "6"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = {"group_id": "2", "member_id": "7"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = {"group_id": "2", "member_id": "6"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # for group in Group.objects.all():
+        #     res = self.client.get('/groups/members', {"group_id": f"{group.id}"}, **headers)
+        #     print(res.json()['members'], end='\n\n')
+
+    def test_manage_groups_members_post(self):
+        token = self.login_for_test(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        self.add_five_friends_to_groups_for_test(headers)
+        temp_user6 = User.objects.create(email="temp_email6@email.com", name='temp_user6', password=encrypt_text('123456'))
+        data = {"group_id": "4", "member_id": "4"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -3)
+        data = {"group_id": "2", "member_id": "8"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+        data = {"group_id": "2", "member_id": "7"}
+        res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -3)
+    
+    def test_manage_groups_members_delete(self):
+        token = self.login_for_test(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        self.add_five_friends_to_groups_for_test(headers)
+        temp_user6 = User.objects.create(email="temp_email6@email.com", name='temp_user6', password=encrypt_text('123456'))
+        data = {"group_id": "4", "member_id": "3"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -3)
+        data = {"group_id": "2", "member_id": "8"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -3)
+        data = {"group_id": "1", "member_id": "7"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -3)
+        data = {"group_id": "4", "member_id": "4"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -3)
+        data = {"group_id": "2", "member_id": "8"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -3)
+        data = {"group_id": "2", "member_id": "7"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        data = {"group_id": "2", "member_id": "7"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -3)
+        data = {"group_id": "1", "member_id": "6"}
+        res = self.client.delete('/groups/members', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        # for group in Group.objects.all():
+        #     res = self.client.get('/groups/members', {"group_id": f"{group.id}"}, **headers)
+        #     print(res.json()['members'], end='\n\n')
+
+    # 1: 3, 5, 6  2: 6, 7
+    def test_manage_friends_get(self):
+        token = self.login_for_test(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        self.add_five_friends_to_groups_for_test(headers)
+        temp_user6 = User.objects.create(email="temp_email6@email.com", name='temp_user6', password=encrypt_text('123456'))
+        res = self.client.get('/manage_friends', {"friend_id": f"{temp_user6.id}"}, **headers)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+        for i in range(3, 8):
+            res = self.client.get('/manage_friends', {"friend_id": f"{i}"}, **headers)
+            self.assertEqual(res.status_code, 200)
+            # print('\n', res.json(), '\n')
+            # input()
+
+    def test_manage_friends_delete(self):
+        token = self.login_for_test(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        self.add_five_friends_to_groups_for_test(headers)
+        # for group in Group.objects.all():
+        #     res = self.client.get('/groups/manage_groups', {"group_id": f"{group.id}"}, **headers)
+        #     print('\n', res.json(), '\n')
+        res = self.client.delete('/manage_friends', data={"friend_id": f"{6}"}, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # input()
+        # for group in Group.objects.all():
+        #     res = self.client.get('/groups/manage_groups', {"group_id": f"{group.id}"}, **headers)
+        #     print('\n', res.json(), '\n')

@@ -13,7 +13,7 @@ urlpatterns = [
     path('friend_request_handle', views.friend_request_handle),
     path('groups', views.groups),
     path('groups/manage_groups', views.manage_groups),
-    # path('groups/<group_id>/members', views.manage_group_members),
+    path('groups/members', views.manage_group_members),
     path('friends',views.get_friends_list),
     path('manage_friends',views.manage_friends),
     # path('conversations', views.conv),
