@@ -759,6 +759,7 @@ class ImsTests(TestCase):
         #     for member in conversation.members.all():
         #         print(member, end=' ')
         #     print(end='\n')
+        return [temp_user1.id, temp_user2.id, temp_user3.id, temp_user4.id, temp_user5.id]
     
     def test_groups_no_groups(self):
         token = self.login_for_test(self.holder_login)
@@ -810,7 +811,7 @@ class ImsTests(TestCase):
         self.assertEqual(res.json()['code'], -1)
         data = {"name": "groupname"}
         res = self.client.post('/groups', data=data, **headers, content_type='application/json')
-        res = self.client.get('/groups/manage_groups', {"group_id": "1"}, **headers)
+        res = self.client.get('/groups/manage_groups', {"group_id": f"{Group.objects.filter(name='groupname').first().id}"}, **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
 
@@ -823,23 +824,25 @@ class ImsTests(TestCase):
         data = {"name": "groupname2"}
         res = self.client.post('/groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
-        data = {"group_id": "3", "new_name": "groupname3"}
+        id2 = Group.objects.filter(name='groupname2').first().id
+        data = {"group_id": f"{id2 + 1}", "new_name": "groupname3"}
         res = self.client.put('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], -1)
-        data = {"group_id": "2", "new_name": "groupname1"}
+        data = {"group_id": f"{id2}", "new_name": "groupname1"}
         res = self.client.put('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 409)
         self.assertEqual(res.json()['code'], -1)
-        data = {"group_id": "2", "new_name": "groupname3"}
+        data = {"group_id": f"{id2}", "new_name": "groupname3"}
         res = self.client.put('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
-        data = {"group_id": "1", "new_name": "groupname2"}
+        id1 = Group.objects.filter(name='groupname1').first().id
+        data = {"group_id": f"{id1}", "new_name": "groupname2"}
         res = self.client.put('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
-        data = {"group_id": "1", "new_name": "groupname2"}
+        data = {"group_id": f"{id1}", "new_name": "groupname2"}
         res = self.client.put('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -853,23 +856,24 @@ class ImsTests(TestCase):
         data = {"name": "groupname2"}
         res = self.client.post('/groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
-        data = {"group_id": "3"}
+        id2 = Group.objects.filter(name='groupname2').first().id
+        data = {"group_id": f"{id2 + 1}"}
         res = self.client.delete('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], -1)
-        data = {"group_id": "2"}
+        data = {"group_id": f"{id2}"}
         res = self.client.delete('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
-        data = {"group_id": "2"}
+        data = {"group_id": f"{id2}"}
         res = self.client.delete('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], -1)
-        data = {"group_id": "2", "new_name": "groupname3"}
+        data = {"group_id": f"{id2}", "new_name": "groupname3"}
         res = self.client.put('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], -1)
-        data = {"group_id": "1", "new_name": "groupname2"}
+        data = {"group_id": f"{Group.objects.filter(name='groupname1').first().id}", "new_name": "groupname2"}
         res = self.client.put('/groups/manage_groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
@@ -883,35 +887,35 @@ class ImsTests(TestCase):
         data = {"name": "groupname2"}
         res = self.client.post('/groups', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
-        res = self.client.get('/groups/members', {"group_id": "3"}, **headers)
+        res = self.client.get('/groups/members', {"group_id": f"{Group.objects.filter(name='groupname2').first().id + 1}"}, **headers)
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], -1)
-        res = self.client.get('/groups/members', {"group_id": "2"}, **headers)
+        res = self.client.get('/groups/members', {"group_id": f"{Group.objects.filter(name='groupname2').first().id}"}, **headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()['code'], 0)
         self.assertEqual(res.json()['members'], [])
     
     def add_five_friends_to_groups_for_test(self, headers):
-        self.add_five_friends_for_test(headers)
+        ids = self.add_five_friends_for_test(headers)
         data = {"name": "groupname1"}
         res = self.client.post('/groups', data=data, **headers, content_type='application/json')
         data = {"name": "groupname2"}
         res = self.client.post('/groups', data=data, **headers, content_type='application/json')
         data = {"name": "groupname3"}
         res = self.client.post('/groups', data=data, **headers, content_type='application/json')
-        data = {"group_id": "1", "member_id": "3"}
+        data = {"group_id": "1", "member_id": f"{ids[0]}"}
         res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
-        data = {"group_id": "1", "member_id": "5"}
+        data = {"group_id": "1", "member_id": f"{ids[2]}"}
         res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
-        data = {"group_id": "1", "member_id": "6"}
+        data = {"group_id": "1", "member_id": f"{ids[3]}"}
         res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
-        data = {"group_id": "2", "member_id": "7"}
+        data = {"group_id": "2", "member_id": f"{ids[4]}"}
         res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
-        data = {"group_id": "2", "member_id": "6"}
+        data = {"group_id": "2", "member_id": f"{ids[3]}"}
         res = self.client.post('/groups/members', data=data, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         # for group in Group.objects.all():
