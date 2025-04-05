@@ -419,115 +419,121 @@ def friend_request_handle(req: HttpRequest):
         return request_success({"message": "已拒绝该好友申请"})
 
 
-# @CheckRequire
-# def groups(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def groups(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     if req.method not in ["GET", "POST"]:
-#         return BAD_METHOD
-#     # 获取群组列表
-#     if req.method == "GET":
-#         user_email = User.objects.filter(id=payload["id"]).first().email
-#         groups = Group.objects.filter(owner__email=user_email)
-#         group_list = [
-#             {
-#                 "id": group.id,
-#                 "name": group.name,
-#             }
-#             for group in groups
-#         ]
-#         return request_success({"groups": group_list})
+    if req.method not in ["GET", "POST"]:
+        return BAD_METHOD
+    # 获取群组列表
+    if req.method == "GET":
+        user_email = User.objects.filter(id=payload["id"]).first().email
+        groups = Group.objects.filter(owner__email=user_email)
+        if not groups.exists():
+            return request_success({"groups": []})
+        group_list = [
+            {
+                "id": group.id,
+                "name": group.name,
+            }
+            for group in groups
+        ]
+        return request_success({"groups": group_list})
 
-#     # 创建群组
-#     elif req.method == "POST":
-#         user_email = User.objects.filter(id=payload["id"]).first().email
-#         body = json.loads(req.body.decode("utf-8"))
-#         name = require(body, "name", "string", err_msg="Missing or error type of [name]")
+    # 创建群组
+    elif req.method == "POST":
+        user = User.objects.filter(id=payload['id']).first()
+        user_email = user.email
+        body = json.loads(req.body.decode("utf-8"))
+        name = require(body, "name", "string", err_msg="Missing or error type of [name]")
+        if name == '':
+            return request_failed(-2, "Missing or error type of [name]", 400)
 
-#         existing_group = Group.objects.filter(owner__email=user_email, name=name).first()
-#         if existing_group:
-#             return request_failed(-1, "Group already exists", 400)
+        existing_group = Group.objects.filter(owner__email=user_email, name=name).first()
+        if existing_group:
+            return request_failed(-1, "Group already exists", 409)
 
-#         new_group = Group.objects.create(owner_id=user_email, name=name)
-#         new_group.save()
+        new_group = Group.objects.create(owner=user, name=name)
+        new_group.save()
 
-#         return request_success({"message": "分组创建成功"})
+        return request_success({"message": "分组创建成功"})
 
-# @CheckRequire
-# def manage_groups(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
+@CheckRequire
+def manage_groups(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
 
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-#     if req.method not in ["GET", "PUT", "DELETE"]:
-#         return BAD_METHOD
+    if req.method not in ["GET", "PUT", "DELETE"]:
+        return BAD_METHOD
 
-#     # 查看分组详情
-#     if req.method == "GET":
-#         group_id = req.GET.get("group_id", "")
-#         group = Group.objects.filter(id=int(group_id)).first()
-#         if not group:
-#             return request_failed(-1, "Group not found", 404)
+    # 查看分组详情
+    if req.method == "GET":
+        group_id = req.GET.get("group_id", "")
+        group = Group.objects.filter(id=int(group_id)).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
 
-#         group_members = [
-#             {
-#                 "id": member.id,
-#                 "email": member.email,
-#                 "name": member.name,
-#                 "avatar": member.avatar,
-#             }
-#             for member in group.members.all()
-#         ]
+        group_members = [
+            {
+                "id": member.id,
+                "email": member.email,
+                "name": member.name,
+                "avatar": member.avatar,
+            }
+            for member in group.members.all()
+        ]
 
-#         result = {
-#             "id": group.id,
-#             "name": group.name,
-#             "members": group_members,
-#         }
+        result = {
+            "id": group.id,
+            "name": group.name,
+            "members": group_members,
+        }
 
-#         return request_success({"group": result})
+        return request_success({"group": result})
 
-#     # 修改分组名称
-#     elif req.method == "PUT":
-#         body = json.loads(req.body.decode("utf-8"))
-#         user_email = User.objects.filter(id=payload["id"]).first().email
-#         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
-#         new_name = require(body, "new_name", "string", err_msg="Missing or error type of [new_name]")
+    # 修改分组名称
+    elif req.method == "PUT":
+        body = json.loads(req.body.decode("utf-8"))
+        user_email = User.objects.filter(id=payload["id"]).first().email
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+        new_name = require(body, "new_name", "string", err_msg="Missing or error type of [new_name]")
 
-#         exsiting_group = Group.objects.filter(owner__email=user_email, name=new_name).first()
-#         if exsiting_group and exsiting_group.id != int(group_id):
-#             return request_failed(-1, "Name already exists", 409)
+        exsiting_group = Group.objects.filter(owner__email=user_email, name=new_name).first()
+        if exsiting_group and exsiting_group.id != int(group_id):
+            return request_failed(-1, "Name already exists", 409)
 
-#         group = Group.objects.filter(id=group_id).first()
-#         if not group:
-#             return request_failed(-1, "Group not found", 404)
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
 
-#         group.name = new_name
-#         group.save()
+        group.name = new_name
+        group.save()
 
-#         return request_success({"message": "修改分组名称成功"})
+        return request_success({"message": "修改分组名称成功"})
 
-#     # 删除分组
-#     elif req.method == "DELETE":
-#         user_email = User.objects.filter(id=payload["id"]).first().email
-#         body = json.loads(req.body.decode("utf-8"))
-#         group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
+    # 删除分组
+    elif req.method == "DELETE":
+        user_email = User.objects.filter(id=payload["id"]).first().email
+        body = json.loads(req.body.decode("utf-8"))
+        group_id = require(body, "group_id", "int", err_msg="Missing or error type of [group_id]")
 
-#         group = Group.objects.filter(id=group_id).first()
-#         if not group:
-#             return request_failed(-1, "Group not found", 404)
+        group = Group.objects.filter(id=group_id).first()
+        if not group:
+            return request_failed(-1, "Group not found", 404)
 
-#         group.delete()
+        group.delete()
+        return request_success({"message": "删除分组成功"})
 
 
 # @CheckRequire
