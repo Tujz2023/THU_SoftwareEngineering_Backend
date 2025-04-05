@@ -309,7 +309,7 @@ PUT请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若无查询条件，状态码400，错误码-7，错误信息"Missing or error type of [query_name]"。
-- 若查找的用户不存在或者已经被注销，状态码404，错误码-1，错误信息"User not found or deleted"。
+- 若查找的结果不存在，返回success，状态码200，以及空列表
 
 #### 好友申请/add_friend
 
@@ -350,7 +350,7 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若查找的用户或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found or deleted"。
+- 若目标用户或不存在或者已经被注销或当前用户不存在，状态码404，错误码-1，错误信息"User not found or deleted"。
 - 若用户已是好友，状态码403，错误码-4，错误信息"Already friends"。
 - 若已经向对方发送过好友请求但是对方并未处理，状态码403，错误码-5，错误信息"Friend request already sent"。
 - 若向自己发送好友请求，状态码403，错误码-6，错误信息"Can not add yourself as friend"。
@@ -417,7 +417,7 @@ PUT请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若不存在好友申请，状态码403，错误码-7，错误信息"No friend request"。
+- 若不存在好友申请，返回success，状态码200，以及空列表。
 
 #### 处理好友申请/friend_request_handle
 
@@ -912,7 +912,7 @@ DELETE请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若好友不存在，状态码404，错误码-1，错误信息"暂时没有好友"。
+- 若好友不存在，返回success，状态码200，以及空列表
 
 #### 好友操作/manage_friends
 

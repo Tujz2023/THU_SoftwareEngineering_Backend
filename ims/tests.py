@@ -263,8 +263,9 @@ class ImsTests(TestCase):
     def test_search_users_user_not_found(self):
         headers = self.generate_header(self.holder_id)
         res = self.client.get('/search_user', {'query_name': 'wrong user name'}, **headers)
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(res.json()['code'], -1)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['results'], [])
     
     def test_search_users_success(self):
         user1 = User.objects.create(email="email1@email.com", name='user', password=encrypt_text('123456'))
@@ -432,8 +433,9 @@ class ImsTests(TestCase):
         # print('begin res\n', res.json()['requests'], 'end res\n')
         headers = {"HTTP_AUTHORIZATION": tokens[2]}
         res = self.client.get('/friend_requests', **headers)
-        self.assertEqual(res.status_code, 403)
-        self.assertEqual(res.json()['code'], -7)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['requests'], [])
 
     def test_get_friend_requests_success2(self):
         token = self.login_for_test(self.holder_login)
@@ -604,8 +606,9 @@ class ImsTests(TestCase):
         token = self.login_for_test(self.holder_login)
         headers = {"HTTP_AUTHORIZATION": token}
         res = self.client.get('/friends', **headers)
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(res.json()['code'], -1)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['friends'], [])
     
     def test_get_friends_list_success1(self):
         token = self.login_for_test(self.holder_login)
@@ -663,8 +666,9 @@ class ImsTests(TestCase):
         self.assertEqual(res.json()['code'], 0)
         # print("\ntemp_user3: ", res.json()['friends'], '\n')
         res = self.client.get('/friends', **headers5)
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(res.json()['code'], -1)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['friends'], [])
 
     def test_manage_friends_delete_friend_not_found(self):
         token = self.login_for_test(self.holder_login)
@@ -713,11 +717,13 @@ class ImsTests(TestCase):
         res = self.client.delete('/manage_friends', data={"friend_id": self.holder_id}, **headers1, content_type='application/json')
         self.assertEqual(res.status_code, 200)
         res = self.client.get('/friends', **headers)
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(res.json()['code'], -1)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['friends'], [])
         res = self.client.get('/friends', **headers1)
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(res.json()['code'], -1)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['code'], 0)
+        self.assertEqual(res.json()['friends'], [])
         # print('\nRequest list: ', Request.objects.all(), '\n')
 
         data = {"target_id": user.id, "message": "Hello!"}
@@ -729,3 +735,5 @@ class ImsTests(TestCase):
         res = self.client.get('/friends', **headers1)
         # print('\n  ', res.json()['friends'], '\n')
         # print('\nRequest list: ', Request.objects.all(), '\n')
+
+    # * Tests for groups portion

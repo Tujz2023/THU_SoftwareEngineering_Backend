@@ -241,7 +241,8 @@ def search_users(req: HttpRequest):
     users = User.objects.filter(name=query_name, deleted=False)  # 只查询未注销用户
 
     if not users.exists():
-        return request_failed(-1, "User not found or deleted", 404)
+        result = []
+        return request_success({"results": result})
 
     result = [
         {
@@ -338,7 +339,8 @@ def get_friend_requests(req: HttpRequest):
     cur_user_id = User.objects.filter(email=user_email).first().id
 
     if not Request.objects.filter(receiver__email=user_email).exists():
-        return request_failed(-7, "No friend request", 403)
+        request_list = []
+        return request_success({"requests": request_list})
     
     friend_requests = Request.objects.filter(receiver__email=user_email).order_by("-time")  # 按申请时间降序排列
 
@@ -617,7 +619,8 @@ def get_friends_list(req: HttpRequest):
     user_email = User.objects.filter(id=payload["id"]).first().email
 
     if not Conversation.objects.filter(type=0).filter(members__email=user_email).exists():
-        return request_failed(-1, "暂时没有好友", 404)
+        friends_list = []
+        return request_success({"friends": friends_list})
 
     # 从对话中获取好友列表中好友的email列表
     friends_emails = (
