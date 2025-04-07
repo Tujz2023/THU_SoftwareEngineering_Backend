@@ -272,7 +272,7 @@ PUT请求：
     "info": "success",
     "results": [
         {
-            "user_id": "user_id",
+            "user_id": user_id,
             "name": "userName",
             "email": "userEmail",
             "avatar": "userAvatarUrl",
@@ -280,7 +280,7 @@ PUT请求：
             "deleted": True
         },
         {
-            "user_id": "user_id",
+            "user_id": user_id,
             "name": "userName",
             "email": "userEmail",
             "avatar": "userAvatarUrl",
@@ -321,7 +321,7 @@ PUT请求：
 
 ```json
 {
-    "target_id": "target_id",
+    "target_id": target_id,
     "message":"Hello",
 }
 ```
@@ -374,8 +374,8 @@ PUT请求：
     "info": "success",
     "requests": [
         {
-            "sender_user_id": "user_id",
-            "receiver_user_id": "user_id",
+            "sender_user_id": user_id,
+            "receiver_user_id": user_id,
             "user_email": "user_email",
             "user_name": "UserName",
             "avatar": "AvatarUrl",
@@ -384,8 +384,8 @@ PUT请求：
             "status": 0 // 0: 等待处理，1: 已同意，2: 已拒绝，3：已成为好友
         },
         {
-            "sender_user_id": "user_id",
-            "receiver_user_id": "user_id",
+            "sender_user_id": user_id,
+            "receiver_user_id": user_id,
             "user_email": "user_email",
             "user_name": "UserName",
             "avatar": "AvatarUrl",
@@ -514,11 +514,11 @@ GET请求：
     "info": "success",
     "groups": [
         {
-            "id": "group_id",
+            "id": group_id,
             "name": "groupName"
         },
         {
-            "id": "group_id",
+            "id": group_id,
             "name": "groupName"
         }
     ]
@@ -579,7 +579,6 @@ POST请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若分组名称已存在，状态码409，错误码-1，错误信息"Group already exists"。
-- 若分组名称为空，状态码400，错误码-2，错误信息"Missing or error type of [name]"
 
 #### 分组操作/groups/manage_groups
 
@@ -609,18 +608,18 @@ GET请求：
     "code": 0,
     "info": "success",
     "group": {
-        "id": "group_id",
+        "id": group_id,
         "name": "groupName",
         "members": [
             {
-                "id": "user_id",
+                "id": user_id,
                 "email": "user_email",
                 "name": "userName",
                 "avatar": "AvatarUrl",
                 "deleted": True
             },  
             {
-                "id": "user_id",
+                "id": user_id,
                 "email": "user_email",
                 "name": "userName",
                 "avatar": "AvatarUrl",
@@ -663,7 +662,7 @@ PUT请求：
 
 ```json
 {
-    "group_id": "group_id",
+    "group_id": group_id,
     "new_name": "newGroupName"
 }
 ```
@@ -702,7 +701,7 @@ DELETE请求：
 
 ```json
 {
-    "group_id": "group_id"
+    "group_id": group_id
 }
 ```
 
@@ -758,14 +757,14 @@ GET请求：
     "info": "success",
     "members": [
         {
-            "id": "user_id",
+            "id": user_id,
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
             "deleted": True
         },  
         {
-            "id": "user_id",
+            "id": user_id,
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
@@ -800,8 +799,8 @@ POST请求：
 
 ```json
 {
-    "group_id": "group_id",
-    "member_id": "target_id"
+    "group_id": group_id,
+    "member_id": target_id
 }
 ```
 
@@ -839,8 +838,8 @@ DELETE请求：
 
 ```json
 {
-    "group_id": "group_id",
-    "member_id": "target_id"
+    "group_id": group_id,
+    "member_id": target_id
 }
 ```
 
@@ -888,14 +887,14 @@ DELETE请求：
     "info": "success",
     "friends": [
         {
-            "id": "user_id",
+            "id": user_id,
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
             "deleted": True
         },  
         {
-            "id": "user_id",
+            "id": user_id,
             "email": "user_email",
             "name": "userName",
             "avatar": "AvatarUrl",
@@ -951,18 +950,19 @@ GET请求：
 {
     "code": 0,
     "info": "success",
-    "id": "user_id",
+    "id": user_id,
     "email": "friend_email",
     "name": "userName",
     "avatar": "AvatarUrl",
+    "user_info":"user_info",
     "deleted": false,
     "groups": [
         {
-            "id": "group_id",
+            "id": group_id,
             "name": "groupName"
         },
         {
-            "id": "group_id",
+            "id": group_id,
             "name": "groupName"
         }
     ]
@@ -973,6 +973,7 @@ GET请求：
 - email: 好友邮箱
 - name: 好友昵称
 - avatar: 好友头像URL
+- user_info: 用户信息
 - deleted: 好友是否已注销
 - groups: 好友所在分组名称
 
@@ -998,7 +999,7 @@ DELETE请求：
 
 ```json
 {
-    "friend_id": "friend_id"
+    "friend_id": friend_id
 }
 ```
 
