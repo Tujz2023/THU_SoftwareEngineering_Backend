@@ -579,7 +579,6 @@ POST请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若分组名称已存在，状态码409，错误码-1，错误信息"Group already exists"。
-- 若分组名称为空，状态码400，错误码-2，错误信息"Missing or error type of [name]"
 
 #### 分组操作/groups/manage_groups
 
@@ -955,6 +954,7 @@ GET请求：
     "email": "friend_email",
     "name": "userName",
     "avatar": "AvatarUrl",
+    "user_info":"user_info",
     "deleted": false,
     "groups": [
         {
@@ -973,6 +973,7 @@ GET请求：
 - email: 好友邮箱
 - name: 好友昵称
 - avatar: 好友头像URL
+- user_info: 用户信息
 - deleted: 好友是否已注销
 - groups: 好友所在分组名称
 

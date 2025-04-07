@@ -690,6 +690,7 @@ def manage_friends(req: HttpRequest):
             "name": friend.name,
             "avatar": friend.avatar,
             # "avatar": "true" if friend.avatar else "false",
+            "user_info": friend.user_info,
             "deleted": friend.deleted,
             "groups": [
                 {
