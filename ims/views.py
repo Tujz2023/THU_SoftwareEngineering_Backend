@@ -731,6 +731,11 @@ def manage_friends(req: HttpRequest):
             for group in groups:
                 group.members.remove(friend)
 
+        if Group.objects.filter(owner=friend).filter(members=user).exists():
+            groups = Group.objects.filter(owner=friend).filter(members=user).all()
+            for group in groups:
+                group.members.remove(user)
+
         return request_success({"message": "删除好友成功"})
 
 # @CheckRequire
