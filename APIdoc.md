@@ -1577,23 +1577,19 @@ POST请求：
 - 若要设置的user不在群聊中，状态码400，错误码1，"User not in conversation"
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 
-#### 移除群成员/conversations//remove_member
+#### 退出群组或移除群成员 /conversations/member/remove
 
-该API用于移除群成员。
+POST请求：
 
-DELETE请求：
+该API用于退出群组。
 
 ```json
 {
-    "conversationId": "conversationId",
-    "user_email": "user_email",
-    "member_id": "member_email"
+    "conversation_id": conversationId,
 }
 ```
 
-- conversationId: 移除群成员的会话ID
-- user_email: 移除群成员的用户ID
-- member_id: 要移除的群成员ID
+conversation_id: 所在会话ID
 
 响应：
 请求成功时，设置状态码为200OK，返回移除群成员成功的消息，成功响应格式为:
@@ -1601,48 +1597,7 @@ DELETE请求：
 ```json
 {  
     "code": 0,
-    "info": "success",
-    "message": "移除群成员成功"
-}
-```
-
-请求失败时，错误相应的格式为：
-
-```json
-{  
-    "code": *,  
-    "info": "[error message]"
-}
-```
-
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若移除普通群员的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能移除群员"。
-- 若移除群管理员的非群主，状态码403，错误码-3，错误信息"非群主不能移除群管理员"。
-- 若移除的群成员不是群组成员，状态码403，错误码-3，错误信息"群成员不是群组成员"。
-
-#### 退出群组/conversations//quit
-
-该API用于退出群组。
-
-DELETE请求：
-
-```json
-{
-    "conversationId": "conversationId",
-    "user_email": "user_email"
-}
-```
-
-- conversationId: 退出群组的会话ID
-- user_email: 退出群组的用户ID
-
-响应：
-请求成功时，设置状态码为200OK，返回退出群组成功的消息，成功响应格式为:
-
-```json
-{  
-    "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "message": "退出群组成功"
 }
 ```
@@ -1656,10 +1611,51 @@ DELETE请求：
 }
 ```
 
+- 若要自身不在群聊中，状态码400，错误码1，"你不在群组中，无法退出"
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若退出群组的非群成员，状态码403，错误码-3，错误信息"非群成员不能退出群组"。
 
-#### 进群邀请/conversations//invite
+DELETE请求：
+
+该API用于移除群成员。
+
+```json
+{
+    "conversation_id": conversationId,
+    "user": uid,
+}
+```
+
+- conversation_id: 所在会话ID
+- user: 要移除的用户id
+
+响应：
+请求成功时，设置状态码为200OK，返回移除群成员成功的消息，成功响应格式为:
+
+```json
+{  
+    "code": 0,
+    "info": "Succeed",
+    "message": "移除群成员成功"
+}
+```
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 权限不足，状态码403，错误码-3，错误信息"非群主或管理员不能移除群成员"。
+- 若移除的群成员不是群组成员，状态码403，错误码-3，错误信息"群成员不是群组成员"。
+- 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若要设置的user不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若要设置的user不在群聊中，状态码400，错误码1，"User not in conversation"
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+
+#### 进群邀请/conversations/member/add
 
 该API用于群组邀请。
 
