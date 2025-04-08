@@ -155,3 +155,11 @@ class Group(models.Model):
 
     def __str__(self):
         return f"Group {self.name} (ID: {self.id}) - Owner: {self.owner.id}"
+
+class Notification(models.Model):
+    # TODO
+    sender = None
+    conversation = None
+    content = ""
+    time = utils_time.get_timestamp()
+    # end TODO
