@@ -159,7 +159,7 @@ class Group(models.Model):
 class Notification(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notification_sender")
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    # conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     content = models.TextField()
     time = models.FloatField(default=utils_time.get_timestamp)
 
