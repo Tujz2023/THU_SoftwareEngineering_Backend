@@ -1745,29 +1745,24 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若非群主或管理员处理群组邀请，状态码403，错误码-3，错误信息"非群主或管理员不能处理邀请"。
 
-#### 更新群信息/conversations//update_info
+#### 更新群信息/conversations/manage/info
 
 该API用于更新群信息。
 
 POST请求：
 
 ```json
+
 {
-    "conversationId": "conversationId",
-    "user_email": "user_email",
+    "conversation_id": cid
     "name": "groupName",
     "avatar": "AvatarUrl",
-    "admins": ["adminId1", "adminId2"],
-    "members": ["member_email1", "member_email2"]
 }
 ```
 
-- conversationId: 更新群信息的会话ID
-- user_email: 更新群信息的用户ID
-- name: 群名称
-- avatar: 群头像URL
-- admins: 群管理员ID列表
-- members: 群成员ID列表
+- conversation_id: 更新群信息的会话ID
+- name: 群名称(可选)
+- avatar: 群头像URL(可选)
 
 响应：
 请求成功时，设置状态码为200OK，返回更新群信息成功的消息，成功响应格式为:
@@ -1775,7 +1770,8 @@ POST请求：
 ```json
 {  
     "code": 0,
-    "info": "success"
+    "info": "Succeed",
+    "message":"修改群信息成功"
 }
 ```
 
@@ -1790,3 +1786,4 @@ POST请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若更新群信息的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能更新群信息"。
+- 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。

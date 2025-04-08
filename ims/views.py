@@ -20,6 +20,7 @@ from ims.models import (
     Invitation,
     Group,
     Interface,
+    Notification,
 )
 from utils.utils_request import (
     BAD_METHOD,
@@ -908,6 +909,38 @@ def conv_member_remove(req: HttpRequest):
         conv.members.remove(set_user)
         conv.save()
         return request_success({"message":"移除群成员成功"})
+
+@CheckRequire
+def conv_manage_info(req: HttpRequest):
+    if req.method != "POST":
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    conversation_id = req.GET.get("conversation_id", "")
+    conv = Conversation.objects.filter(id=conversation_id).first()
+    if not conv:
+        return request_failed(-1, "Conversation not found", 404)
+    if conv.creator != cur_user and cur_user not in conv.managers.all():
+        return request_failed(-3, "非群主或管理员不能修改群信息", 403)
+    body = json.loads(req.body.decode("utf-8"))
+
+    if 'name' in body.keys():
+        name = require(body, "name", "str", err_msg="Missing or error type of [name]")
+        conv.ConvName = name
+        notif_name = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}将群名称修改为{name}")
+        notif_name.save()
+    if 'avatar' in body.keys():
+        avatar = require(body, "avatar", "str", err_msg="Missing or error type of [avatar]")
+        conv.avatar = avatar
+        notif_avatar = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}修改了群头像")
+        notif_avatar.save()
+    conv.save()
+    return request_success({"message":"修改群信息成功"})
 
 # @CheckRequire
 # def interface(req: HttpRequest):

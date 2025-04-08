@@ -17,11 +17,11 @@ urlpatterns = [
     path('friends',views.get_friends_list),
     path('manage_friends',views.manage_friends),
     # path('conversations', views.conv),
-    # path('conversations/messages', views.message),
-    # path('conversations/manage/admin', views.conv_manage_admin),
-    # path('conversations/manage/ownership_transfer', views.conv_manage_ownership),
-    # path('conversations/member/remove', views.conv_member_remove),
+    path('conversations/messages', views.message),
+    path('conversations/manage/admin', views.conv_manage_admin),
+    path('conversations/manage/info', views.conv_manage_info),
+    path('conversations/manage/ownership_transfer', views.conv_manage_ownership),
+    path('conversations/member/remove', views.conv_member_remove),
     # path('conversations/member/add', views.conv_member_add),
-    
     # path('interface/<conversation_id>', views.interface),
 ]
