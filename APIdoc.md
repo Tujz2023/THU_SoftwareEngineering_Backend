@@ -1189,11 +1189,11 @@ GET请求：
 
 ```json
 {
-    "conversationId": "conversationId",
+    "conversation_id": cid,
 }
 ```
 
-- conversationId: 查看会话详情的会话ID
+- conversation_id: 查看会话详情的会话ID
 
 响应：
 请求成功时，设置状态码为200OK，返回会话详情，成功响应格式为:
@@ -1202,57 +1202,15 @@ GET请求：
 {
     "code": 0,
     "info": "Succeed",
-    "id": "convid",
-    "is_chat_group": true,
-    "name": "conversationName",
-    "avatar": "AvatarUrl",
-    "last_message": "lastMessage",
-    "last_message_time": "lastMessageTime",
-    "is_top": true,
-    "notice_able": true,
-    "members": [
-        {
-            "id": "user_email",
-            "name": "userName",
-            "avatar": "AvatarUrl"
-        },
-        {
-            "id": "user_email",
-            "name": "userName",
-            "avatar": "AvatarUrl"
-        }
-    ],
-    "notification":[
-        {
-            "id": "notificationId",
-            "sender_id": "senderId",
-            "sender_name": "senderName",
-            "sender_avatar": "AvatarUrl",
-            "content": "notificationContent",
-            "timestamp": "2025-03-13T14:30:00Z"
-        },
-        {
-            "id": "notificationId", 
-            "sender_id": "senderId",
-            "sender_name": "senderName",
-            "sender_avatar": "AvatarUrl",
-            "content": "notificationContent",
-            "timestamp": "2025-03-13T14:30:00Z"
-        }
-    ] 
+    "unreads": itf.unreads,
+    "notification": itf.notification,
+    "ontop": itf.ontop
 }
 ```
 
-- id: 会话ID
-- is_chat_group: 是否为群聊
-- name: 会话名称
-- avatar: 会话头像URL
-- last_message: 最后一条消息内容
-- last_message_time: 最后一条消息时间
-- is_top: 是否置顶
-- notice_able: 是否允许提醒
-- members: 会话参与人列表，包含参与人ID、昵称、头像URL等。
-- notification: 通知列表，包含通知ID、发送者ID、发送者昵称、发送者头像、通知内容、通知时间等。
+- ontop: 是否置顶
+- notification: 是否允许提醒
+- unreads: 未读消息数
 
 请求失败时，错误相应的格式为：
 
@@ -1265,6 +1223,7 @@ GET请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
+- 若会话权限异常，状态码403，错误码-3，错误信息"权限异常"。
 
 ##### 置顶会话、消息免打扰、未读信息数设置 /interface
 
@@ -1305,8 +1264,9 @@ POST请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
+- 若会话权限异常，状态码403，错误码-3，错误信息"权限异常"。
 
-#### 聊天记录管理 /conversations//manage_messages
+#### 聊天记录管理 /conversations/manage_messages
 
 该API用于管理特定会话的聊天记录，包括筛选聊天记录，删除聊天记录
 
@@ -1380,18 +1340,18 @@ GET请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
-##### 删除聊天记录
+##### 彻底删除聊天记录 /conversations/messages
+
+注意：此操作从数据库中彻底删除某条聊天记录，对会话中所有用户有效。
 
 DELETE请求：
 
 ```json
 {
-    "conversationId": "conversationId",
     "message_id": "messageId"
 }
 ```
 
-- conversationId: 删除聊天记录的会话ID
 - message_id: 要删除的消息ID
 
 响应：
@@ -1400,7 +1360,7 @@ DELETE请求：
 ```json
 {
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "message": "删除聊天记录成功"
 }
 ```
@@ -1415,8 +1375,8 @@ DELETE请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 - 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。
+- 若不是消息发送者或不是群组管理员、群主，则无权限，状态码403，错误码-3，错误信息"No permission to delete message"。
 
 ### 群聊管理
 
@@ -1744,29 +1704,24 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若非群主或管理员处理群组邀请，状态码403，错误码-3，错误信息"非群主或管理员不能处理邀请"。
 
-#### 更新群信息/conversations//update_info
+#### 更新群信息/conversations/manage/info
 
 该API用于更新群信息。
 
 POST请求：
 
 ```json
+
 {
-    "conversationId": "conversationId",
-    "user_email": "user_email",
+    "conversation_id": cid
     "name": "groupName",
     "avatar": "AvatarUrl",
-    "admins": ["adminId1", "adminId2"],
-    "members": ["member_email1", "member_email2"]
 }
 ```
 
-- conversationId: 更新群信息的会话ID
-- user_email: 更新群信息的用户ID
-- name: 群名称
-- avatar: 群头像URL
-- admins: 群管理员ID列表
-- members: 群成员ID列表
+- conversation_id: 更新群信息的会话ID
+- name: 群名称(可选)
+- avatar: 群头像URL(可选)
 
 响应：
 请求成功时，设置状态码为200OK，返回更新群信息成功的消息，成功响应格式为:
@@ -1774,7 +1729,8 @@ POST请求：
 ```json
 {  
     "code": 0,
-    "info": "success"
+    "info": "Succeed",
+    "message":"修改群信息成功"
 }
 ```
 
@@ -1789,3 +1745,4 @@ POST请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若更新群信息的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能更新群信息"。
+- 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
