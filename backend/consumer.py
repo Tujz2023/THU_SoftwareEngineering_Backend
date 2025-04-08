@@ -1,5 +1,5 @@
 import json
-from ims.models import User
+from utils.utils_jwt import check_jwt_token
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 class IMSConsumer(AsyncWebsocketConsumer):
@@ -7,9 +7,9 @@ class IMSConsumer(AsyncWebsocketConsumer):
     async def connect(self) -> None:
         # 从查询字符串中提取用户名
         # self.userid: str = self.scope['query_string'].decode('utf-8').split('=')[1]
-        email = self.scope['query_string'].decode('utf-8').split('=')[1]
-        user = User.objects.filter(email=email).first()
-        self.userid = str(user.id)
+        jwt_token = self.scope['query_string'].decode('utf-8').split('=')[1]
+        payload = check_jwt_token(jwt_token)
+        self.userid = str(payload["id"])
 
         # 将当前 WebSocket 连接添加到一个全体用户组中
         # 这样可以确保发给这个组的所有消息都会被转发给目前连接的所有客户端
