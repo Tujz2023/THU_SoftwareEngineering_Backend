@@ -276,7 +276,7 @@ PUT请求：
             "name": "userName",
             "email": "userEmail",
             "avatar": "userAvatarUrl",
-            "is_friend": True,      
+            "is_friend": True,  
             "deleted": True
         },
         {
@@ -1420,23 +1420,21 @@ DELETE请求：
 
 ### 群聊管理
 
-#### 设置群组管理员/conversations//set_admin
+#### 设置/解除群组管理员 /conversations/manage/admin
 
-该API用于设置群组管理员。
+该API用于设置或解除群组管理员。
 
 POST请求：
 
 ```json
 {
-    "conversationId": "conversationId",
-    "user_email": "user_email",
-    "admin_id": "adminId"
+    "conversation_id": conversationId,
+    "user": uid,
 }
 ```
 
-- conversationId: 设置群组管理员的会话ID
-- user_email: 设置管理员的用户ID
-- admin_id: 需要添加的管理员ID
+- conversation_id: 设置群组管理员的会话ID
+- user: 管理员的用户id
 
 响应：
 请求成功时，设置状态码为200OK，返回设置群组管理员成功的消息，成功响应格式为:
@@ -1444,7 +1442,7 @@ POST请求：
 ```json
 {  
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "message": "设置群组管理员成功"
 }
 ```
@@ -1458,27 +1456,14 @@ POST请求：
 }
 ```
 
+- 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若要设置的user不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若要设置的user不在群聊中，状态码400，错误码1，"User not in conversation"
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 权限不足，状态码403，错误码-3，错误信息"非群主不能设置管理员"。
-- 若设置的成员已经是管理员，状态码403，错误码-3，错误信息"成员已经是管理员"。
+- 若设置的成员已经是管理员，状态码403，错误码3，错误信息"成员已经是管理员"
 
-#### 解除群组管理员/conversations//unset_admin
-
-该API用于解除群组管理员。
-
-DELETE请求：
-
-```json
-{
-    "conversationId": "conversationId",
-    "user_email": "user_email",
-    "admin_id": "adminId"
-}
-```
-
-- conversationId: 解除群组管理员的会话ID
-- user_email: 解除管理员的用户ID
-- admin_id: 需要解除的管理员ID
+DELETE请求：请求体与POST方法相同。
 
 响应：
 请求成功时，设置状态码为200OK，返回解除群组管理员成功的消息，成功响应格式为:
@@ -1486,7 +1471,7 @@ DELETE请求：
 ```json
 {  
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "message": "解除群组管理员成功"
 }
 ```
@@ -1500,11 +1485,14 @@ DELETE请求：
 }
 ```
 
+- 若解除的管理员不是群组管理员，状态码403，错误码3，错误信息"管理员不是群组管理员"。
+- 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若要设置的user不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若要设置的user不在群聊中，状态码400，错误码1，"User not in conversation"
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 权限不足，状态码403，错误码-3，错误信息"非群主不能解除管理员"。
-- 若解除的管理员不是群组管理员，状态码403，错误码-3，错误信息"管理员不是群组管理员"。
+- 权限不足，状态码403，错误码-3，错误信息"非群主不能设置管理员"。
 
-#### 发布群公告/conversations//notifications
+#### 发布群公告/conversations/manage/notifications
 
 该API用于发布群公告。
 
@@ -1547,7 +1535,7 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若发布公告的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能发布公告"。
 
-#### 群主转让/conversations//transfer_owner
+#### 群主转让/conversations/manage/ownership_transfer
 
 该API用于群主转让。
 
@@ -1555,15 +1543,13 @@ POST请求：
 
 ```json
 {
-    "conversationId": "conversationId",
-    "user_email": "user_email",
-    "new_owner_id": "newOwnerId"
+    "conversation_id": conversationId,
+    "user": uid,
 }
 ```
 
-- conversationId: 群主转让的会话ID
-- user_email: 转让群主的用户ID
-- new_owner_id: 转让群主的新群主ID
+- conversation_id: 设置群组管理员的会话ID
+- user: 管理员的用户id
 
 响应：
 请求成功时，设置状态码为200OK，返回群主转让成功的消息，成功响应格式为:
@@ -1571,7 +1557,7 @@ POST请求：
 ```json
 {  
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "message": "群主转让成功"
 }
 ```
@@ -1585,9 +1571,11 @@ POST请求：
 }
 ```
 
-- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若转让群主的非群主，状态码403，错误码-3，错误信息"非群主不能转让群主"。
-- 若转让的新群主不是群组成员，状态码403，错误码-3，错误信息"新群主不是群组成员"。
+- 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若要设置的user不存在，状态码404，错误码-1，错误信息"User not found"。
+- 若要设置的user不在群聊中，状态码400，错误码1，"User not in conversation"
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 
 #### 移除群成员/conversations//remove_member
 

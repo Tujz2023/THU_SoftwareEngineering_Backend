@@ -18,5 +18,7 @@ urlpatterns = [
     path('manage_friends',views.manage_friends),
     # path('conversations', views.conv),
     # path('conversations/messages', views.message),
+    # path('conversations/manage/admin', views.conv_manage_admin),
+    # path('conversations/manage/ownership_transfer', views.conv_manage_ownership),
     # path('interface/<conversation_id>', views.interface),
 ]
