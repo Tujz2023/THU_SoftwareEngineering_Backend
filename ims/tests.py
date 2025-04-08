@@ -1011,3 +1011,20 @@ class ImsTests(TestCase):
         # for group in Group.objects.all():
         #     res = self.client.get('/groups/manage_groups', {"group_id": f"{group.id}"}, **headers)
         #     print('\n', res.json(), '\n')
+
+    def test_manage_friends_delete2(self):
+        token = self.login_for_test(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        ids = self.add_five_friends_to_groups_for_test(headers)
+        login1 = {"email": "temp_email4@email.com", "password": encrypt_text("123456")}
+        token1 = self.login_for_test(login1)
+        headers1 = {"HTTP_AUTHORIZATION": token1}
+        # for group in Group.objects.all():
+        #     res = self.client.get('/groups/manage_groups', {"group_id": f"{group.id}"}, **headers)
+        #     print('\n', res.json(), '\n')
+        res = self.client.delete('/manage_friends', data={"friend_id": f"{self.holder_id}"}, **headers1, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # input()
+        # for group in Group.objects.all():
+        #     res = self.client.get('/groups/manage_groups', {"group_id": f"{group.id}"}, **headers)
+        #     print('\n', res.json(), '\n')
