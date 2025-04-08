@@ -749,7 +749,7 @@ def manage_friends(req: HttpRequest):
 #     payload = check_jwt_token(jwt_token)
 #     if payload is None:
 #         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     cur_user = User.objects.filter(email=payload["email"]).first()
+#     cur_user = User.objects.filter(id = payload["id"]).first()
 
 #     if req.method == "GET":
 #         body = json.loads(req.body.decode("utf-8"))
@@ -866,6 +866,38 @@ def conv_manage_admin(req: HttpRequest):
         return request_success({"message":"解除群组管理员成功"})
     
 @CheckRequire
+def conv_manage_info(req: HttpRequest):
+    if req.method != "POST":
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    conversation_id = req.GET.get("conversation_id", "")
+    conv = Conversation.objects.filter(id=conversation_id).first()
+    if not conv:
+        return request_failed(-1, "Conversation not found", 404)
+    if conv.creator != cur_user and cur_user not in conv.managers.all():
+        return request_failed(-3, "非群主或管理员不能修改群信息", 403)
+    body = json.loads(req.body.decode("utf-8"))
+
+    if 'name' in body.keys():
+        name = require(body, "name", "str", err_msg="Missing or error type of [name]")
+        conv.ConvName = name
+        notif_name = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}将群名称修改为{name}")
+        notif_name.save()
+    if 'avatar' in body.keys():
+        avatar = require(body, "avatar", "str", err_msg="Missing or error type of [avatar]")
+        conv.avatar = avatar
+        notif_avatar = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}修改了群头像")
+        notif_avatar.save()
+    conv.save()
+    return request_success({"message":"修改群信息成功"})
+    
+@CheckRequire
 def conv_manage_ownership(req: HttpRequest):
     if req.method != "POST":
         return BAD_METHOD
@@ -941,106 +973,170 @@ def conv_member_add(req: HttpRequest):
     cur_user = User.objects.filter(id=payload["id"]).first()
     body = json.loads(req.body.decode("utf-8"))
     conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-    member_ids = require(body, "member_id", "list", err_msg="Missing or error type of [member_id]")
+    member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
 
     conv = Conversation.objects.filter(id=conversation_id).first()
 
-    existing_members = conv.members.filter(id__in=member_ids)
-    if existing_members.exists():# 检查是否已经在群聊中
-        return request_failed(-3, "Some members are already in the conversation", 403)
+    existing_member = conv.members.filter(id=member_id).first()# 检查是否已经在群聊中
+    if existing_member:
+        return request_failed(-3, "The member is already in the conversation", 403)
     
-    for member_id in member_ids:# 检查是不是自己的好友
-        member = User.objects.filter(id=member_id).first()
-        if not Conversation.objects.filter(type=0).filter(members=member).filter(members=cur_user).exists():
-            return request_failed(-4, "some members are not cur user's friend", 403)
+    member = User.objects.filter(id=member_id).first()# 检查是不是自己的好友
+    if not Conversation.objects.filter(type=0).filter(members=member).filter(members=cur_user).exists():
+        return request_failed(-4, "The user is not your friend", 403)
 
-    for member_id in member_ids:
-        receiver = User.objects.filter(id=member_id).first()
-        if not receiver:
-            return request_failed(-5, f"User with ID {member_id} does not exist", 403)
-
-        invitation = Invitation(
-            sender=cur_user,
-            receiver=receiver,
-            conversation=conv,
-            status=0 # waiting
-        )
-        invitation.save()
+    invitation = Invitation(
+        sender=cur_user,
+        receiver=member,
+        conversation=conv,
+        status=0 # waiting
+    )
+    invitation.save()
 
     return request_success({"message": "邀请成功，等待管理员确认"})
-    
-
 
 @CheckRequire
-def conv_manage_info(req: HttpRequest):
-    if req.method != "POST":
+def conv_invitation(req: HttpRequest,conversation_id:int):# 用于所有群成员查看邀请，但是只有群主和管理员可以处理（handle函数）
+    if req.method != "GET":
         return BAD_METHOD
     jwt_token = req.headers.get("Authorization")
-    if jwt_token == None or jwt_token == "":
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    cur_user = User.objects.filter(id=payload["id"]).first()
-    conversation_id = req.GET.get("conversation_id", "")
+    
     conv = Conversation.objects.filter(id=conversation_id).first()
     if not conv:
         return request_failed(-1, "Conversation not found", 404)
-    if conv.creator != cur_user and cur_user not in conv.managers.all():
-        return request_failed(-3, "非群主或管理员不能修改群信息", 403)
-    body = json.loads(req.body.decode("utf-8"))
+    
+    invitations_list = Invitation.objects.filter(Conversation=conv).order_by("-time")
 
-    if 'name' in body.keys():
-        name = require(body, "name", "str", err_msg="Missing or error type of [name]")
-        conv.ConvName = name
-        notif_name = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}将群名称修改为{name}")
-        notif_name.save()
-    if 'avatar' in body.keys():
-        avatar = require(body, "avatar", "str", err_msg="Missing or error type of [avatar]")
-        conv.avatar = avatar
-        notif_avatar = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}修改了群头像")
-        notif_avatar.save()
-    conv.save()
-    return request_success({"message":"修改群信息成功"})
+    if not invitations_list.exists():
+        return request_success({"invitations": []})
+    invitations= []
+    for invitation in invitations_list:
+        invitations.append({
+            "invite_id": invitation.id,
+            "conversation_id": invitation.conversation.id,
+            "sender_id": invitation.sender.id,
+            "sender_name": invitation.sender.name,
+            "receiver_id": invitation.receiver.id,
+            "receiver_name": invitation.receiver.name,
+            "timestamp": datetime.datetime.fromtimestamp(invitation.time).strftime('%Y-%m-%d %H:%M:%S'),
+            "status": invitation.status,
+        })
 
+    return request_success({"invitations": invitations})
+    
+    
 @CheckRequire
-def interface(req: HttpRequest):
+def conv_handle_invitation(req: HttpRequest):
+    if req.method not in ["POST", "DELETE"]:
+        return BAD_METHOD
     jwt_token = req.headers.get("Authorization")
-    if jwt_token == None or jwt_token == "":
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
     cur_user = User.objects.filter(id=payload["id"]).first()
+    body = json.loads(req.body.decode("utf-8"))
+    invitation_id = require(body, "invite_id", "int", err_msg="Missing or error type of [invite_id]")
+    conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
+    status = require(body, "status", "int", err_msg="Missing or error type of [status]")
 
-    conversation_id = req.GET.get("conversation_id", "")
-    conver = Conversation.objects.filter(id=conversation_id).first()
-    if not conver:
-        return request_failed(-1, "会话不存在", 404)
-    itf = Interface.objects.filter(conv=conver, user=cur_user).first()
-    if not itf:
-        return request_failed(-3, "权限异常", 403)
-    if req.method == "GET":
-        return_data = {
-            "unreads": itf.unreads,
-            "notification": itf.notification,
-            "ontop": itf.ontop
-        }
-        return request_success(return_data)
-    elif req.method == "POST":
-        body = json.loads(req.body.decode("utf-8"))
-        conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-        # conditional
-        if 'ontop' in body.keys():
-            ontop = require(body, "ontop", "bool", err_msg="Missing or error type of [ontop]")
-            itf.ontop = ontop
-        if 'notification' in body.keys():
-            notification = require(body, "notification", "bool", err_msg="Missing or error type of [notification]")
-            itf.notification = notification
-        if 'unreads' in body.keys():
-            unreads = require(body, "unreads", "int", err_msg="Missing or error type of [unreads]")
-            itf.unreads = unreads
-        itf.save()
-        return request_success()
-    else:
+    conv = Conversation.objects.filter(id=conversation_id).first()
+    invitation = Invitation.objects.filter(id=invitation_id).first()
+    is_creator = conv.creator.id == cur_user.id
+    is_admin = conv.managers.filter(id=cur_user.id).exists()
+
+    if not is_creator and not is_admin:
+        return request_failed(-3, "非群主或管理员不能处理邀请", 403)
+
+    if status != 0:
+        return request_failed(-4, "邀请已处理", 403)
+    
+    if req.method == "POST":
+        invitation.status = 2 # accepted
+        invitation.save()
+        conv.members.add(invitation.receiver)
+        conv.save()
+        return request_success({"message": "同意该用户入群"})
+
+    elif req.method == "DELETE":
+        invitation.status = 1 # rejected
+        invitation.save()
+        conv.members.remove(invitation.receiver)
+        conv.save()
+        return request_success({"message": "拒绝该用户入群"})
+
+@CheckRequire
+def conv_manage_notifications(req: HttpRequest):
+    if req.method != "POST":
         return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    body = json.loads(req.body.decode("utf-8"))
+    conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
+    content = require(body, "content", "string", err_msg="Missing or error type of [content]")
+    conv = Conversation.objects.filter(id=conversation_id).first()
+    is_creator = conv.creator.id == cur_user.id
+    is_admin = conv.managers.filter(id=cur_user.id).exists()
+    if not is_creator and not is_admin:
+        return request_failed(-3, "非群主或管理员不能发布公告", 403)
+    
+    notif = Notification(sender=cur_user, conversation=conv, content=content)
+    notif.save()
+    return request_success({"message": "发布群公告成功"})
+
+# @CheckRequire
+# def interface(req: HttpRequest):
+#     jwt_token = req.headers.get("Authorization")
+#     if jwt_token == None or jwt_token == "":
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     payload = check_jwt_token(jwt_token)
+#     if payload is None:
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     cur_user = User.objects.filter(id=payload["id"]).first()
+
+#     conversation_id = req.GET.get("conversation_id", "")
+#     conver = Conversation.objects.filter(id=conversation_id).first()
+#     if not conver:
+#         return request_failed(-1, "会话不存在", 404)
+#     itf = Interface.objects.filter(conv=conver, user=cur_user).first()
+#     if not itf:
+#         return request_failed(-3, "权限异常", 403)
+#     if req.method == "GET":
+#         return_data = {
+#             "unreads": itf.unreads,
+#             "notification": itf.notification,
+#             "ontop": itf.ontop
+#         }
+#         return request_success(return_data)
+#     elif req.method == "POST":
+#         body = json.loads(req.body.decode("utf-8"))
+#         conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+#         # conditional
+#         if 'ontop' in body.keys():
+#             ontop = require(body, "ontop", "bool", err_msg="Missing or error type of [ontop]")
+#             itf.ontop = ontop
+#         if 'notification' in body.keys():
+#             notification = require(body, "notification", "bool", err_msg="Missing or error type of [notification]")
+#             itf.notification = notification
+#         if 'unreads' in body.keys():
+#             unreads = require(body, "unreads", "int", err_msg="Missing or error type of [unreads]")
+#             itf.unreads = unreads
+#         itf.save()
+#         return request_success()
+#     else:
+#         return BAD_METHOD
