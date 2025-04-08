@@ -155,11 +155,27 @@ class Group(models.Model):
 
     def __str__(self):
         return f"Group {self.name} (ID: {self.id}) - Owner: {self.owner.id}"
-
+    
 class Notification(models.Model):
-    # TODO
-    sender = None
-    conversation = None
-    content = ""
-    time = utils_time.get_timestamp()
-    # end TODO
+    id = models.BigAutoField(primary_key=True, unique=True)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notification_sender")
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
+    content = models.TextField()
+    time = models.FloatField(default=utils_time.get_timestamp)
+
+    class Meta:
+        indexes = [models.Index(fields=["id", "time"])]
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "sender": self.sender.id,
+            "conversation": self.conversation.id,
+            "content": self.content,
+            "created_time": self.time
+        }
+
+    def __str__(self) -> str:
+        return f"notification {self.id} from {self.sender.email} in conversation {self.conversation.id}"
+
+    

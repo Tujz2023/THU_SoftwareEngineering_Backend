@@ -1624,14 +1624,11 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "user_email": "user_email",
     "member_id": ["member_email1", "member_email2"],
-    "timestamp": "2025-03-13T14:30:00Z"
 }
 ```
 
 - conversationId: 群组邀请的会话ID
-- user_email: 群组邀请的用户ID
 - member_id: 群组邀请的成员ID列表
 - timestamp: 群组邀请时间
 
@@ -1656,7 +1653,9 @@ POST请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若邀请的成员已经是群组成员，状态码403，错误码-3，错误信息"成员已经是群组成员"。
+- 若邀请的成员已经是群组成员，状态码403，错误码-3，错误信息"Some members are already in the conversation"。
+- 若邀请的成员不是自己的好友，状态码403，错误码-4，错误信息"some members are not cur user's friend"。
+- 若邀请的成员不存在，状态码403，错误码-5，错误信息"User dose not exist"
 
 #### 处理群组邀请/conversations//handle_invite
 
