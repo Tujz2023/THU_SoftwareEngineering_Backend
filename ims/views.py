@@ -913,6 +913,51 @@ def conv_member_remove(req: HttpRequest):
         conv.members.remove(set_user)
         conv.save()
         return request_success({"message":"移除群成员成功"})
+    
+@CheckRequire
+def conv_member_add(req: HttpRequest):
+    if req.method != "POST":
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    body = json.loads(req.body.decode("utf-8"))
+    conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+    member_ids = require(body, "member_id", "list", err_msg="Missing or error type of [member_id]")
+
+    conv = Conversation.objects.filter(id=conversation_id).first()
+
+    existing_members = conv.members.filter(id__in=member_ids)
+    if existing_members.exists():# 检查是否已经在群聊中
+        return request_failed(-3, "Some members are already in the conversation", 403)
+    
+    for member_id in member_ids:# 检查是不是自己的好友
+        member = User.objects.filter(id=member_id).first()
+        if not Conversation.objects.filter(type=0).filter(members=member).filter(members=cur_user).exists():
+            return request_failed(-4, "some members are not cur user's friend", 403)
+
+    for member_id in member_ids:
+        receiver = User.objects.filter(id=member_id).first()
+        if not receiver:
+            return request_failed(-5, f"User with ID {member_id} does not exist", 403)
+
+        invitation = Invitation(
+            sender=cur_user,
+            receiver=receiver,
+            conversation=conv,
+            status=0 # waiting
+        )
+        invitation.save()
+
+    return request_success({"message": "邀请成功，等待管理员确认"})
+    
+
 
 # @CheckRequire
 # def interface(req: HttpRequest):
