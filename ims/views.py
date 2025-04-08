@@ -839,13 +839,16 @@ def conv_manage_admin(req: HttpRequest):
         if set_user in conv.managers.all():
             return request_failed(3, "成员已经是管理员", 403)
         conv.managers.add(set_user)
+        conv.save()
         return request_success({"message":"设置群组管理员成功"})
     elif req.method == "DELETE":
         if set_user not in conv.managers.all():
             return request_failed(3, "成员不是管理员", 403)
         conv.managers.remove(set_user)
+        conv.save()
         return request_success({"message":"解除群组管理员成功"})
     
+@CheckRequire
 def conv_manage_ownership(req: HttpRequest):
     if req.method != "POST":
         return BAD_METHOD
@@ -871,6 +874,40 @@ def conv_manage_ownership(req: HttpRequest):
     conv.creator = set_user
     conv.save()
     return request_success({"message":"群主转让成功"})
+
+@CheckRequire
+def conv_member_remove(req: HttpRequest):
+    if req.method not in ["POST", "DELETE"]:
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    conversation_id = req.GET.get("conversation_id", "")
+    conv = Conversation.objects.filter(id=conversation_id).first()
+    if not conv:
+        return request_failed(-1, "Conversation not found", 404)
+    if req.method == "POST":
+        if cur_user not in conv.members.all():
+            return request_failed(-1, "你不在群组中，无法退出", 400)
+        conv.members.remove(cur_user)
+        conv.save()
+        return request_success({"message":"退出群组成功"})
+    elif req.method == "DELETE":
+        if conv.creator != cur_user and cur_user not in conv.managers.all():
+            return request_failed(-3, "非群主或管理员不能移除群成员", 403)
+        set_user_id = req.GET.get("user", "")
+        set_user = User.objects.filter(id=set_user_id).first()
+        if not set_user:
+            return request_failed(-1, "User not found", 404)
+        if set_user not in conv.members.all():
+            return request_failed(1, "User not in conversation", 400)
+        conv.members.remove(set_user)
+        conv.save()
+        return request_success({"message":"移除群成员成功"})
 
 # @CheckRequire
 # def interface(req: HttpRequest):
