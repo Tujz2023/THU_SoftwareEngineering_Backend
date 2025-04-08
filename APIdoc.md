@@ -1460,17 +1460,13 @@ POST请求：
 
 ```json
 {
-    "conversationId": "conversationId",
-    "sender_id": "user_email",
+    "conversation_id": "conversationId",
     "content": "content",
-    "timestamp": "2025-03-13T14:30:00Z"
 }
 ```
 
-- conversationId: 发布群公告的会话ID
-- sender_id: 发布公告的用户ID
+- conversation_id: 发布群公告的会话ID
 - content: 公告内容
-- timestamp: 公告发布时间
 
 响应：
 请求成功时，设置状态码为200OK，返回发布群公告成功的消息，成功响应格式为:
@@ -1623,8 +1619,8 @@ POST请求：
 
 ```json
 {
-    "conversationId": "conversationId",
-    "member_id": ["member_email1", "member_email2"],
+    "conversationId": conversationId,
+    "member_id": member_id,
 }
 ```
 
@@ -1653,34 +1649,84 @@ POST请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若邀请的成员已经是群组成员，状态码403，错误码-3，错误信息"Some members are already in the conversation"。
-- 若邀请的成员不是自己的好友，状态码403，错误码-4，错误信息"some members are not cur user's friend"。
-- 若邀请的成员不存在，状态码403，错误码-5，错误信息"User dose not exist"
+- 若邀请的成员已经是群组成员，状态码403，错误码-3，错误信息"The member is already in the conversation"。
+- 若邀请的成员不是自己的好友，状态码403，错误码-4，错误信息"The user is not your friend"。
 
-#### 处理群组邀请/conversations//handle_invite
+#### 获取群组邀请/conversations/<conversation_id>/invitation
 
-该API用于处理群组邀请。
+该API用于获取群组邀请列表。
 
-POST请求：
+GET请求：
+
+无请求体
+
+响应：
+请求成功时，设置状态码为200OK，返回群组邀请列表，成功响应格式为:
 
 ```json
 {
-    "conversationId": "conversationId",
-    "user_email": "user_email",
-    "invite_id": "inviteId",
-    "member_email": "member_email",
-    "timestamp": "2025-03-13T14:30:00Z",
-    "status": "true"
+    "code": 0,
+    "info": "success",
+    "invitation": [
+        {
+            "invite_id": inviteId,
+            "conversation_id": conversationId,
+            "sender_id": senderId,
+            "sender_name": "senderName",
+            "receiver_id": receiverId,
+            "receiver_name": "receiverName",
+            "timestamp": "2025-03-13T14:30:00Z",
+            "status": 0
+        },
+        {
+            "invite_id": inviteId,
+            "conversation_id": conversationId,
+            "sender_id": senderId,
+            "sender_name": "senderName",
+            "receiver_id": receiverId,
+            "receiver_name": "receiverName",
+            "timestamp": "2025-03-13T14:30:00Z",
+            "status": 1
+        }
+    ]
 }
 ```
 
-- conversationId: 处理群组邀请的会话ID
-- user_email: 处理群组邀请的用户ID
-- invite_id: 发出邀请的成员ID
-- member_email: 处理群组邀请的成员ID
-- timestamp: 发出邀请的时间
-- status: 处理结果，true为接受邀请，false为拒绝邀请
+- invitation: 群组邀请列表，包含邀请ID、发起者ID、发起者昵称、接收者ID、接收者昵称、邀请时间等。
+- invite_id: 邀请ID
+- sender_id: 发起者ID
+- sender_name: 发起者昵称
+- receiver_id: 接收者ID
+- receiver_name: 接收者昵称
+- timestamp: 邀请时间
+请求失败时，错误相应的格式为：
 
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+
+#### 处理入群邀请/conversations/manage/handle_invitation
+
+该API用于同意进群邀请或者拒绝该邀请
+
+```json
+{
+    "conversation_id": conversationId,
+    "invite_id": inviteId,
+    "status": 0
+}
+```
+
+- conversation_id: 处理群组邀请的会话ID
+- invite_id: 发出邀请的成员ID
+- status: 处理群组邀请的状态，0表示同意，1表示拒绝，2表示成功
+
+POST请求：
 响应：
 请求成功时，设置状态码为200OK，返回处理群组邀请成功的消息，成功响应格式为:
 
@@ -1689,6 +1735,18 @@ POST请求：
     "code": 0,
     "info": "success",
     "message": "同意该用户入群"
+}
+```
+
+DELETE请求：
+响应：
+请求成功时，设置状态码为200OK，返回处理群组邀请成功的消息，成功响应格式为:
+
+```json
+{  
+    "code": 0,
+    "info": "success",
+    "message": "拒绝该用户入群"
 }
 ```
 
@@ -1703,6 +1761,7 @@ POST请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若非群主或管理员处理群组邀请，状态码403，错误码-3，错误信息"非群主或管理员不能处理邀请"。
+- 若status不为0，则表示已经有人处理过该邀请，状态码403，错误码-4，错误信息"邀请已处理"。
 
 #### 更新群信息/conversations/manage/info
 

@@ -23,7 +23,8 @@ urlpatterns = [
     path('conversations/manage/ownership_transfer', views.conv_manage_ownership),
     path('conversations/member/remove', views.conv_member_remove),
     path('conversations/member/add', views.conv_member_add),
+    path('conversations/<int:conversation_id>/invitation', views.conv_invitation),
+    path('conversation/manage/handle_invitation', views.conv_handle_invitation),
     path('conversations/manage/notifications', views.conv_manage_notifications),
-    path('conversations/manage/handle_invitations', views.conv_manage_handle_invitations),
     # path('interface/<conversation_id>', views.interface),
 ]
