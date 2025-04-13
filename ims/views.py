@@ -777,6 +777,8 @@ def manage_friends(req: HttpRequest):
 
 @CheckRequire
 def message(req: HttpRequest):
+    # TODO: 修改interface
+
     if req.method not in ["POST", "GET", "DELETE"]:
         return BAD_METHOD
     # jwt check
@@ -786,12 +788,10 @@ def message(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    cur_user = User.objects.filter(email=payload["email"]).first()
-    # if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
-    #     return request_failed(1, "Not in conversation", 400)
-
-    body = json.loads(req.body.decode("utf-8"))
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    
     if req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
         msgid = require(body, "message_id", "int", err_msg="Missing or error type of [message_id]")
         if not Message.objects.filter(id=msgid).exists():
             return request_failed(-1, "Message not found", 404)
@@ -800,18 +800,21 @@ def message(req: HttpRequest):
             return request_failed(-3, "No permission to delete message", 403)
         msg.delete()
         return request_success({"message": "删除聊天记录成功"})
-    # below are for POST and GET methods
-    conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-    conv = Conversation.objects.filter(id=conv_id).first()
-    cur_user = User.objects.filter(id=payload["id"]).first()
-    if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
-        return request_failed(1, "Not in conversation", 400)
-    if not conv:
-        return request_failed(-1, "Conversation not found", 404)
+    
     if req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+        conv = Conversation.objects.filter(id=conv_id).first()
+
+        if not conv:
+            return request_failed(-1, "Conversation not found", 404)
+        if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+            return request_failed(1, "Not in conversation", 400)
+
         channel_layer = get_channel_layer()
         for member in conv.members.all():# conv的所有member
             async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+        
         content = require(body, "content", "string", err_msg="Missing or error type of [content]")
         if content == "":
             return request_failed(-3, "Content is empty", 400)
@@ -820,6 +823,7 @@ def message(req: HttpRequest):
         new_message = Message(content=content, sender=cur_user, conversation=conv)
         new_message.save()
         return request_success()
+    
     elif req.method == "GET":
         messages = Message.objects.filter(conversation=conv).order_by("time")
         return request_success({"messages": [msg.serialize() for msg in messages]})

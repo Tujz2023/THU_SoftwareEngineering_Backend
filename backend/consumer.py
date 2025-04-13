@@ -7,7 +7,8 @@ class IMSConsumer(AsyncWebsocketConsumer):
     async def connect(self) -> None:
         # 从查询字符串中提取用户名
         # self.userid: str = self.scope['query_string'].decode('utf-8').split('=')[1]
-        jwt_token = self.scope['query_string'].decode('utf-8').split('=')[1]
+        jwt_token = self.scope['query_string'].decode('utf-8').split('=')
+        jwt_token = '='.join(jwt_token[1:])
         payload = check_jwt_token(jwt_token)
         self.userid = str(payload["id"])
 
