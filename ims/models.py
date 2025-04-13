@@ -81,6 +81,14 @@ class Interface(models.Model):
     class Meta:
         indexes = [models.Index(fields=["id"])]
 
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user": self.user.id,
+            "notification": self.notification,
+            "unreads": self.unreads,
+            "ontop": self.ontop
+        }
     def __str__(self) -> str:
         return f"interface {self.id} of user {self.user.id} in conversation {self.conv.id}"
 
