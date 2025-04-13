@@ -412,7 +412,10 @@ def friend_request_handle(req: HttpRequest):
         new_conversation = Conversation(type=0)
         new_conversation.save()
         new_conversation.members.add(sender, receiver)
-
+        new_itf = Interface.objects.create(conv=new_conversation, user=sender)
+        new_itf.save()
+        new_itf2 = Interface.objects.create(conv=new_conversation, user=receiver)
+        new_itf2.save()
         return request_success({"message": "已接受好友申请"})
 
     elif req.method == "DELETE":
@@ -767,7 +770,7 @@ def conv(req: HttpRequest):
         conv = Conversation.objects.filter(id=conv_id).first()
         if not conv:
             return request_failed(-1, "Conversation not found", 404)
-        itf = Interface.objects.filter(conv = conv).first()
+        itf = Interface.objects.filter(conv = conv, user = cur_user).first()
         if not itf:
             return request_failed(-1, "Interface not found", 404)
         return request_success({"conversation": conv.serialize(), "interface": itf.serialize()})
@@ -779,13 +782,15 @@ def conv(req: HttpRequest):
             if not User.objects.filter(email=member).exists():
                 return request_failed(-1, "User not found", 404)
             member_user = User.objects.filter(email=member).first()
+            mem_interface = Interface(conv=new_conv, user=member_user)
+            mem_interface.save()
             if not Conversation.objects.filter(
             type=0  # 私聊类型
             ).filter(members=member_user).filter(members=cur_user).exists():
                 return request_failed(-3, "Not friend with current user.", 400)
             new_conv.members.add(member_user)
         new_conv.save()
-        return request_success({"conversation": new_conv.serialize(), "interface": Interface.objects.filter(conv=new_conv).first().serialize()})
+        return request_success({"conversation": new_conv.serialize(), "interface": Interface.objects.filter(conv=new_conv, user=cur_user).first().serialize()})
 
 
 @CheckRequire
