@@ -1092,7 +1092,7 @@ class ImsTests(TestCase):
     async def test_messages_post_success(self):
         async_post = sync_to_async(self.client.post, thread_sensitive=True)
         password = await sync_to_async(encrypt_text)('123456')
-        # user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
+        user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
 
         conv = Conversation(type=0)
         await sync_to_async(conv.save)()
