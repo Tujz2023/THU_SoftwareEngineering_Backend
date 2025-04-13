@@ -1207,9 +1207,13 @@ GET请求：
 
 ```json
 {
-    "conversationId": "conversationId"
+    "conversationId": "conversationId",
+    "from": "2025-03-13T14:30:00Z"
 }
 ```
+
+其中from为起始的消息时间，如果没有该字段，则默认从头。
+from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
 
 响应：
 请求成功时，设置状态码为200OK，该群聊中的所有聊天记录，成功响应格式为:
@@ -1224,16 +1228,18 @@ GET请求：
             "content": "content",
             "senderid": senderId,
             "sendername": "name",
+            "senderavatar": "avatar",
             "conversation": conversationId,
-            "created_time": 2025.4.14:10:10:10
+            "created_time": "2025-03-13T14:30:00Z"
         },
         {
             "id": id,
             "content": "content",
             "senderid": senderId,
             "sendername": "name",
+            "senderavatar": "avatar",
             "conversation": conversationId,
-            "created_time": 2025.4.14:10:10:13
+            "created_time": "2025-03-13T14:30:20Z"
         },
         ...
     ]
@@ -1244,6 +1250,7 @@ GET请求：
 - content: 消息的内容
 - senderid: 消息发送者的id
 - sendername: 消息发送者的昵称
+- senderavatar: 消息发送者的头像
 - conversation: 群聊id
 - created_time: 消息发送时间
 
@@ -1258,6 +1265,7 @@ GET请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
+- 若用户不在会话中，状态码400，错误码1，错误信息"用户不在会话中"。
 - 若群聊内没有消息，返回正常，状态码200，messages为空列表。
 
 POST请求：

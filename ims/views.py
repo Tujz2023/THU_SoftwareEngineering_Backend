@@ -29,7 +29,7 @@ from utils.utils_request import (
     return_field,
 )
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
-from utils.utils_time import get_timestamp
+from utils.utils_time import get_timestamp, float2time, time2float
 from utils.utils_jwt import generate_jwt_token, check_jwt_token
 from utils.utils_crypto import encrypt_text, decrypt_text
 import re
@@ -320,17 +320,9 @@ def add_friend(req: HttpRequest):
 
     new_request.save()
 
-    # 对request添加websocket
-    new_request_data = {
-        "sender": new_request.sender.id,
-        "receiver": new_request.receiver.id,
-        "message": new_request.message,
-        "time": new_request.time,
-    }
-
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        str(target_id),{"type": "request_message","message":new_request_data}
+        str(target_id),{"type": "request_message"}
     )
 
     return request_success({"message": "申请成功"})
@@ -367,7 +359,7 @@ def get_friend_requests(req: HttpRequest):
             "user_name": req.sender.name,
             "avatar": req.sender.avatar,
             "message": req.message,
-            "created_at": datetime.datetime.fromtimestamp(req.time).strftime('%Y-%m-%d %H:%M:%S'),
+            "created_at": float2time(req.time),
             "status": req.status
         }
         for req in friend_requests
@@ -748,6 +740,11 @@ def manage_friends(req: HttpRequest):
             groups = Group.objects.filter(owner=friend).filter(members=user).all()
             for group in groups:
                 group.members.remove(user)
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            str(friend.id),{"type": "delete_friend"}
+        )
 
         return request_success({"message": "删除好友成功"})
 
@@ -838,12 +835,22 @@ def message(req: HttpRequest):
         return request_success()
     
     elif req.method == "GET":
-        messages = Message.objects.filter(conversation=conv).order_by("time")
+        conv_id = int(req.GET.get('conversationId'))
+        conv = Conversation.objects.filter(id=conv_id).first()
+
+        if not conv:
+            return request_failed(-1, "Conversation not found", 404)
+        if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+            return request_failed(1, "Not in conversation", 400)
+
+        timestring = req.GET.get('after', '0')
+        if timestring != '0':
+            timestamp = time2float(timestring)
+        else:
+            timestamp = 0
+        
+        messages = Message.objects.filter(time__gte=timestamp).order_by('time')
         return request_success({"messages": [msg.serialize() for msg in messages]})
-        # # Selected messages after timestamp:
-        # timestamp = req.GET.get('time', '0')
-        # messages = Message.objects.filter(time__gte=timestamp).order_by('time')
-        # return request_success({"messages": [msg.serialize() for msg in messages]})
 
 
 @CheckRequire

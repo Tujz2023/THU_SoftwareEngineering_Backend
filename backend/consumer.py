@@ -36,6 +36,15 @@ class IMSConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
+    
+    async def delete_friend(self, event):# 好友删除
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "delete_friend",
+                }
+            )
+        )
 
     async def invitation_message(self, event):# 进群邀请
         await self.send(

@@ -1032,13 +1032,61 @@ class ImsTests(TestCase):
         # for group in Group.objects.all():
         #     res = self.client.get('/groups/manage_groups', {"group_id": f"{group.id}"}, **headers)
         #     print('\n', res.json(), '\n')
+
+    async def test_add_delete_friend_websocket(self):
+        async_post = sync_to_async(self.client.post, thread_sensitive=True)
+        password = await sync_to_async(encrypt_text)('123456')
+        user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
+
+        token1 = await sync_to_async(self.login_for_test)({"email": user.email, "password": user.password})
+        communicator = WebsocketCommunicator(application, f"/ws/?token={token1}")
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+
+        token = await sync_to_async(self.login_for_test)(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        data = {"target_id": user.id, "message": "Hello"}
+        res = await async_post('/add_friend', data=data, **headers, content_type='application/json')
+
+        self.assertEqual(res.status_code, 200)
+        response = await communicator.receive_json_from()
+        self.assertEqual(response['type'], 'request_message')
+
+        conv = Conversation(type=0)
+        await sync_to_async(conv.save)()
+        await sync_to_async(conv.members.add)(self.holder, user)
+
+        async_delete = sync_to_async(self.client.delete, thread_sensitive=True)
+        res = await async_delete('/manage_friends', data={"friend_id": f"{user.id}"}, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        response = await communicator.receive_json_from()
+        self.assertEqual(response['type'], 'delete_friend')
+
+    # def test_search_user_detail(self):
+    #     user = User.objects.create(email="user@email.com", name='user', password=encrypt_text('123456'))
+    #     token = self.login_for_test(self.holder_login)
+    #     headers = {"HTTP_AUTHORIZATION": token}
+    #     res = self.client.get('/search_user_detail', {"userId": f"{user.id + 1}"}, **headers)
+    #     self.assertEqual(res.status_code, 404)
+    #     self.assertEqual(res.json()['code'], -1)
+
+    #     res = self.client.get('/search_user_detail', {"userId": f"{user.id}"}, **headers)
+    #     self.assertEqual(res.status_code, 200)
+    #     self.assertEqual(res.json()['user']['is_friend'], False)
+
+    #     conv = Conversation(type=0)
+    #     conv.save()
+    #     conv.members.add(self.holder, user)
+    #     res = self.client.get('/search_user_detail', {"userId": f"{user.id}"}, **headers)
+    #     self.assertEqual(res.status_code, 200)
+    #     self.assertEqual(res.json()['user']['is_friend'], True)
+
 # ====================================================================================================
     
     # * Tests for messages portion
-    async def send_messages_for_test(self, headers, convId, content="Hello there!"):
-        async_post = sync_to_async(self.client.post, thread_sensitive=True)
+    def send_messages_for_test(self, headers, convId, content="Hello there!"):
         data = {"conversationId": f"{convId}", "content": content}
-        res = await async_post('/conversations/messages', data=data, **headers, content_type='application/json')
+        res = self.client.post('/conversations/messages', data=data, **headers, content_type='application/json')
         return res
 
     async def test_messages_post_success(self):
@@ -1057,7 +1105,7 @@ class ImsTests(TestCase):
         connected, _ = await communicator.connect()
         self.assertTrue(connected)
 
-        res = await self.send_messages_for_test(headers, conv.id)
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
         self.assertEqual(res.status_code, 200)
 
         response = await communicator.receive_json_from()
@@ -1074,19 +1122,47 @@ class ImsTests(TestCase):
 
         token = await sync_to_async(self.login_for_test)(self.holder_login)
         headers = {"HTTP_AUTHORIZATION": token}
-        res = await self.send_messages_for_test(headers, conv.id)
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], 1)
 
-        res = await self.send_messages_for_test(headers, conv.id + 1)
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id + 1)
         self.assertEqual(res.status_code, 404)
         self.assertEqual(res.json()['code'], -1)
 
         await sync_to_async(conv.members.add)(self.holder)
-        res = await self.send_messages_for_test(headers, conv.id, "")
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id, "")
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], -3)
 
-        res = await self.send_messages_for_test(headers, conv.id, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], -3)
+
+    def test_messages_get(self):
+        user = User.objects.create(email="user@email.com", name='user', password=encrypt_text('123456'))
+
+        conv = Conversation(type=0)
+        conv.save()
+        conv.members.add(self.holder, user)
+
+        headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+        headers1 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": user.email, "password": user.password})}
+        res = self.client.get('/conversations/messages', {"conversationId": conv.id + 1}, **headers)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+
+        res = self.send_messages_for_test(headers, conv.id)
+        self.assertEqual(res.status_code, 200)
+        res = self.send_messages_for_test(headers, conv.id)
+        self.assertEqual(res.status_code, 200)
+        res = self.send_messages_for_test(headers1, conv.id)
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get('/conversations/messages', {"conversationId": conv.id}, **headers)
+        self.assertEqual(res.status_code, 200)
+        # print(res.json()['messages'])
+        # input()
+        res = self.client.get('/conversations/messages', {"conversationId": conv.id}, **headers1)
+        self.assertEqual(res.status_code, 200)
+        # print(res.json()['messages'])

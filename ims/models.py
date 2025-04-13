@@ -4,6 +4,7 @@ from utils.utils_request import return_field
 
 from utils.utils_require import MAX_CHAR_LENGTH, MAX_AVATAR_LENGTH
 from utils.utils_avatar import DEFAULT_AVATAR
+from utils.utils_time import time2float, float2time
 
 class User(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
@@ -24,7 +25,7 @@ class User(models.Model):
             "id": self.id,
             "name": self.name, 
             "email": self.email, 
-            "avatar": self.avatar.url,
+            "avatar": self.avatar,
             "user_info": self.user_info,
             "deleted": self.deleted
         }
@@ -61,7 +62,7 @@ class Conversation(models.Model):
             "id": self.id,
             "name": self.ConvName,
             "type": self.type,
-            "avatar": self.avatar.url,
+            "avatar": self.avatar,
             "creator": self.creator.email,
             "last_message_id": self.last_message_id,
         }
@@ -97,10 +98,14 @@ class Message(models.Model):
         return {
             "id": self.id,
             "content": self.content,
-            "sender": self.sender.email,
+            "senderid": self.sender.id,
+            "sendername": self.sender.name,
+            # "senderavatar": self.sender.avatar,
+            "senderavatar": "true" if self.sender.avatar else "false",
             "conversation": self.conversation.id,
-            "created_time": self.time
+            "created_time": float2time(self.time)
         }
+    
     def __str__(self) -> str:
         return f"message {self.id}"
 
