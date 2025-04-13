@@ -29,7 +29,7 @@ from utils.utils_request import (
     return_field,
 )
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
-from utils.utils_time import get_timestamp
+from utils.utils_time import get_timestamp, float2time, time2float
 from utils.utils_jwt import generate_jwt_token, check_jwt_token
 from utils.utils_crypto import encrypt_text, decrypt_text
 import re
@@ -320,17 +320,9 @@ def add_friend(req: HttpRequest):
 
     new_request.save()
 
-    # 对request添加websocket
-    new_request_data = {
-        "sender": new_request.sender.id,
-        "receiver": new_request.receiver.id,
-        "message": new_request.message,
-        "time": new_request.time,
-    }
-
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-        str(target_id),{"type": "request_message","message":new_request_data}
+        str(target_id),{"type": "request_message"}
     )
 
     return request_success({"message": "申请成功"})
@@ -367,7 +359,7 @@ def get_friend_requests(req: HttpRequest):
             "user_name": req.sender.name,
             "avatar": req.sender.avatar,
             "message": req.message,
-            "created_at": datetime.datetime.fromtimestamp(req.time).strftime('%Y-%m-%d %H:%M:%S'),
+            "created_at": float2time(req.time),
             "status": req.status
         }
         for req in friend_requests
@@ -748,6 +740,11 @@ def manage_friends(req: HttpRequest):
             groups = Group.objects.filter(owner=friend).filter(members=user).all()
             for group in groups:
                 group.members.remove(user)
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            str(friend.id),{"type": "delete_friend"}
+        )
 
         return request_success({"message": "删除好友成功"})
 
@@ -790,6 +787,8 @@ def manage_friends(req: HttpRequest):
 
 @CheckRequire
 def message(req: HttpRequest):
+    # TODO: 修改interface
+
     if req.method not in ["POST", "GET", "DELETE"]:
         return BAD_METHOD
     # jwt check
@@ -799,12 +798,10 @@ def message(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    cur_user = User.objects.filter(email=payload["email"]).first()
-    # if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
-    #     return request_failed(1, "Not in conversation", 400)
-
-    body = json.loads(req.body.decode("utf-8"))
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    
     if req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
         msgid = require(body, "message_id", "int", err_msg="Missing or error type of [message_id]")
         if not Message.objects.filter(id=msgid).exists():
             return request_failed(-1, "Message not found", 404)
@@ -813,18 +810,21 @@ def message(req: HttpRequest):
             return request_failed(-3, "No permission to delete message", 403)
         msg.delete()
         return request_success({"message": "删除聊天记录成功"})
-    # below are for POST and GET methods
-    conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-    conv = Conversation.objects.filter(id=conv_id).first()
-    cur_user = User.objects.filter(id=payload["id"]).first()
-    if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
-        return request_failed(1, "Not in conversation", 400)
-    if not conv:
-        return request_failed(-1, "Conversation not found", 404)
+    
     if req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+        conv = Conversation.objects.filter(id=conv_id).first()
+
+        if not conv:
+            return request_failed(-1, "Conversation not found", 404)
+        if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+            return request_failed(1, "Not in conversation", 400)
+
         channel_layer = get_channel_layer()
         for member in conv.members.all():# conv的所有member
             async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+        
         content = require(body, "content", "string", err_msg="Missing or error type of [content]")
         if content == "":
             return request_failed(-3, "Content is empty", 400)
@@ -833,13 +833,24 @@ def message(req: HttpRequest):
         new_message = Message(content=content, sender=cur_user, conversation=conv)
         new_message.save()
         return request_success()
+    
     elif req.method == "GET":
-        messages = Message.objects.filter(conversation=conv).order_by("time")
+        conv_id = int(req.GET.get('conversationId'))
+        conv = Conversation.objects.filter(id=conv_id).first()
+
+        if not conv:
+            return request_failed(-1, "Conversation not found", 404)
+        if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+            return request_failed(1, "Not in conversation", 400)
+
+        timestring = req.GET.get('after', '0')
+        if timestring != '0':
+            timestamp = time2float(timestring)
+        else:
+            timestamp = 0
+        
+        messages = Message.objects.filter(time__gte=timestamp).order_by('time')
         return request_success({"messages": [msg.serialize() for msg in messages]})
-        # # Selected messages after timestamp:
-        # timestamp = req.GET.get('time', '0')
-        # messages = Message.objects.filter(time__gte=timestamp).order_by('time')
-        # return request_success({"messages": [msg.serialize() for msg in messages]})
 
 
 @CheckRequire

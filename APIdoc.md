@@ -1029,6 +1029,54 @@ DELETE请求：
 - 若好友不存在，状态码404，错误码-1，错误信息"Friend not found"。
 - 若对方已经不是好友，状态码404，错误码-3，错误信息"Already not friend"。
 
+#### 查询单独用户信息/search_user_detail
+
+该 API 用于获取单独用户的信息
+
+GET请求：
+
+需要使用authorization头部携带JWT令牌。
+
+请求体：
+```json
+{
+    "userId": userId
+}
+
+响应：
+请求成功时，设置状态码为200OK，返回该用户的相关信息，成功相应格式为：
+
+```json
+{
+    "code": 0,
+    "info": "success",
+    "user": {
+        "name": "name",
+        "email": "example@email.com",
+        "avatar": "avatar",
+        "is_friend": False
+    }
+}
+```
+
+- name: 该用户的昵称
+- email: 该用户的邮箱
+- avatar: 该用户的头像
+- is_friend: 该用户是否为自己的好友
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若用户不存在，状态码404，错误码-1，错误信息"User not found"。
+
+
 ### 在线会话
 
 #### 获取聊天界面 /conversations
@@ -1039,14 +1087,11 @@ DELETE请求：
 
 GET请求：
 
-```json
-{
-    "conversationId": "conversationId"
-}
-```
+需要使用authorization头部携带JWT令牌。
+无请求体
 
 响应：
-请求成功时，设置状态码为200OK，返回聊天界面的信息，成功响应格式为:
+请求成功时，设置状态码为200OK，返回聊天列表及每个聊天的相关信息，成功响应格式为:
 
 ```json
 {
@@ -1063,7 +1108,19 @@ GET请求：
             "is_top":true,
             "notice_able":true,
             "unread_count":0
-        }
+        },
+        {
+            "id":"convid",
+            "name":"conversationName",
+            "avatar":"AvatarUrl",
+            "last_message":"lastMessage",
+            "last_message_time":"lastMessageTime",
+            "is_chat_group":true,
+            "is_top":true,
+            "notice_able":true,
+            "unread_count":0
+        },
+        ...
     ]
 }
 ```
@@ -1089,7 +1146,7 @@ GET请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
+- 若会话列表为空，返回正常，状态码200，会话列表为空列表。
 
 ##### 创建会话
 
@@ -1138,9 +1195,78 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若成员不存在，状态码404，错误码-1，错误信息"成员不存在"。
 
-#### 聊天消息发送 /conversations//messages
+#### 聊天消息发送 /conversations/messages
 
-该API用于发送消息。
+该API用于发送和接收消息列表。
+
+##### 获取消息列表
+
+GET请求：
+
+需要使用authorization头部携带JWT令牌。
+
+```json
+{
+    "conversationId": "conversationId",
+    "from": "2025-03-13T14:30:00Z"
+}
+```
+
+其中from为起始的消息时间，如果没有该字段，则默认从头。
+from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
+
+响应：
+请求成功时，设置状态码为200OK，该群聊中的所有聊天记录，成功响应格式为:
+
+```json
+{
+    "code": 0,
+    "info": "success",
+    "messages": [
+        {
+            "id": id,
+            "content": "content",
+            "senderid": senderId,
+            "sendername": "name",
+            "senderavatar": "avatar",
+            "conversation": conversationId,
+            "created_time": "2025-03-13T14:30:00Z"
+        },
+        {
+            "id": id,
+            "content": "content",
+            "senderid": senderId,
+            "sendername": "name",
+            "senderavatar": "avatar",
+            "conversation": conversationId,
+            "created_time": "2025-03-13T14:30:20Z"
+        },
+        ...
+    ]
+}
+```
+
+- id: 消息的id
+- content: 消息的内容
+- senderid: 消息发送者的id
+- sendername: 消息发送者的昵称
+- senderavatar: 消息发送者的头像
+- conversation: 群聊id
+- created_time: 消息发送时间
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
+- 若用户不在会话中，状态码400，错误码1，错误信息"用户不在会话中"。
+- 若群聊内没有消息，返回正常，状态码200，messages为空列表。
 
 POST请求：
 
