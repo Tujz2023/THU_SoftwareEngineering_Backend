@@ -1089,27 +1089,27 @@ class ImsTests(TestCase):
         res = self.client.post('/conversations/messages', data=data, **headers, content_type='application/json')
         return res
 
-    # async def test_messages_post_success(self):
-    #     async_post = sync_to_async(self.client.post, thread_sensitive=True)
-    #     password = await sync_to_async(encrypt_text)('123456')
-    #     user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
+    async def test_messages_post_success(self):
+        async_post = sync_to_async(self.client.post, thread_sensitive=True)
+        password = await sync_to_async(encrypt_text)('123456')
+        # user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
 
-    #     conv = Conversation(type=0)
-    #     await sync_to_async(conv.save)()
-    #     await sync_to_async(conv.members.add)(self.holder, user)
+        conv = Conversation(type=0)
+        await sync_to_async(conv.save)()
+        # await sync_to_async(conv.members.add)(self.holder, user)
 
-    #     token = await sync_to_async(self.login_for_test)(self.holder_login)
-    #     token1 = await sync_to_async(self.login_for_test)({"email": user.email, "password": user.password})
-    #     headers = {"HTTP_AUTHORIZATION": token}
-    #     communicator = WebsocketCommunicator(application, f"/ws/?token={token1}")
-    #     connected, _ = await communicator.connect()
-    #     self.assertTrue(connected)
+        token = await sync_to_async(self.login_for_test)(self.holder_login)
+        # token1 = await sync_to_async(self.login_for_test)({"email": user.email, "password": user.password})
+        headers = {"HTTP_AUTHORIZATION": token}
+        # communicator = WebsocketCommunicator(application, f"/ws/?token={token1}")
+        # connected, _ = await communicator.connect()
+        # self.assertTrue(connected)
 
-    #     res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
-    #     self.assertEqual(res.status_code, 200)
+        # res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
+        # self.assertEqual(res.status_code, 200)
 
-    #     response = await communicator.receive_json_from()
-    #     self.assertEqual(response['type'], 'notify')
+        # response = await communicator.receive_json_from()
+        # self.assertEqual(response['type'], 'notify')
 
     # async def test_messages_post_failed(self):
     #     async_post = sync_to_async(self.client.post, thread_sensitive=True)
