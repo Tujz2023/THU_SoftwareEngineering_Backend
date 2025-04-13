@@ -7,6 +7,8 @@ WORKDIR /app
 
 COPY . /app
 
+RUN pip install --upgrade setuptools
+
 RUN pip install -i https://pypi-cache-sepi.app.spring25a.secoder.net/simple -r requirements.txt
 
 EXPOSE 80
