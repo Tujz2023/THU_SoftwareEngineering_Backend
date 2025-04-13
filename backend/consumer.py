@@ -26,3 +26,32 @@ class IMSConsumer(AsyncWebsocketConsumer):
     # 向指定用户组发送 notification
     async def notify(self, event) -> None:
         await self.send(text_data=json.dumps({'type': 'notify'}))
+
+    async def request_message(self, event):# 好友请求
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "request_message",
+                }
+            )
+        )
+
+    async def invitation_message(self, event):# 进群邀请
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "invitation_message",
+                }
+            )
+        )
+
+    async def notification_message(self, event): # 群聊通知
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "notification_message",
+                }
+            )
+        )
+
+       
