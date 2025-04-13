@@ -1038,6 +1038,7 @@ GET请求：
 需要使用authorization头部携带JWT令牌。
 
 请求体：
+
 ```json
 {
     "userId": userId
@@ -1075,7 +1076,6 @@ GET请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若用户不存在，状态码404，错误码-1，错误信息"User not found"。
-
 
 ### 在线会话
 
@@ -1631,7 +1631,7 @@ POST请求：
 ```
 
 - conversation_id: 设置群组管理员的会话ID
-- user: 管理员的用户id
+- user: 用户id
 
 响应：
 请求成功时，设置状态码为200OK，返回群主转让成功的消息，成功响应格式为:
@@ -1825,7 +1825,7 @@ GET请求：
 - receiver_id: 接收者ID
 - receiver_name: 接收者昵称
 - timestamp: 邀请时间
-请求失败时，错误相应的格式为：
+  请求失败时，错误相应的格式为：
 
 ```json
 {  
@@ -1833,6 +1833,7 @@ GET请求：
     "info": "[error message]"
 }
 ```
+
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
 
