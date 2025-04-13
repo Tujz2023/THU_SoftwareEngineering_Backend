@@ -320,6 +320,19 @@ def add_friend(req: HttpRequest):
 
     new_request.save()
 
+    # 对request添加websocket
+    new_request_data = {
+        "sender": new_request.sender.id,
+        "receiver": new_request.receiver.id,
+        "message": new_request.message,
+        "time": new_request.time,
+    }
+
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        str(target_id),{"type": "request_message","message":new_request_data}
+    )
+
     return request_success({"message": "申请成功"})
 
 @CheckRequire
@@ -1032,6 +1045,17 @@ def conv_invitation(req: HttpRequest,conversation_id:int):# 用于所有群成�
             "status": invitation.status,
         })
 
+    # invitation的websocket
+    channel_layer = get_channel_layer()
+    for member in conv.members.all():
+        async_to_sync(channel_layer.group_send)(
+            str(member.id),
+            {
+                "type": "invitation_message",
+                "message": invitations
+            }
+        )
+
     return request_success({"invitations": invitations})
     
     
@@ -1101,6 +1125,24 @@ def conv_manage_notifications(req: HttpRequest):
     
     notif = Notification(sender=cur_user, conversation=conv, content=content)
     notif.save()
+
+    # notification的websocket
+    notification_dict = {
+        "sender_id": notif.sender.id,
+        "sender_name": notif.sender.name,
+        "conversation_id": notif.conversation.id,
+        "content": notif.content,
+        "time":notif.time.strftime('%Y-%m-%d %H:%M:%S'),
+    }
+    channel_layer = get_channel_layer()
+    for member in conv.members.all():
+        async_to_sync(channel_layer.group_send)(
+            str(member.id),
+            {
+                "type": "notification_message",
+                "message": notification_dict
+            }
+        )
     return request_success({"message": "发布群公告成功"})
 
 # @CheckRequire
