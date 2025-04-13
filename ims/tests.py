@@ -1033,28 +1033,28 @@ class ImsTests(TestCase):
         #     res = self.client.get('/groups/manage_groups', {"group_id": f"{group.id}"}, **headers)
         #     print('\n', res.json(), '\n')
 
-    # async def test_add_delete_friend_websocket(self):
-    #     async_post = sync_to_async(self.client.post, thread_sensitive=True)
-    #     password = await sync_to_async(encrypt_text)('123456')
-    #     user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
+    async def test_add_delete_friend_websocket(self):
+        async_post = sync_to_async(self.client.post, thread_sensitive=True)
+        password = await sync_to_async(encrypt_text)('123456')
+        user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
 
         token1 = await sync_to_async(self.login_for_test)({"email": user.email, "password": user.password})
         # communicator = WebsocketCommunicator(application, f"/ws/?token={token1}")
         # connected, _ = await communicator.connect()
         # self.assertTrue(connected)
 
-    #     token = await sync_to_async(self.login_for_test)(self.holder_login)
-    #     headers = {"HTTP_AUTHORIZATION": token}
-    #     data = {"target_id": user.id, "message": "Hello"}
-    #     res = await async_post('/add_friend', data=data, **headers, content_type='application/json')
+        token = await sync_to_async(self.login_for_test)(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        data = {"target_id": user.id, "message": "Hello"}
+        res = await async_post('/add_friend', data=data, **headers, content_type='application/json')
 
         self.assertEqual(res.status_code, 200)
         # response = await communicator.receive_json_from()
         # self.assertEqual(response['type'], 'request_message')
 
-    #     conv = Conversation(type=0)
-    #     await sync_to_async(conv.save)()
-    #     await sync_to_async(conv.members.add)(self.holder, user)
+        conv = Conversation(type=0)
+        await sync_to_async(conv.save)()
+        await sync_to_async(conv.members.add)(self.holder, user)
 
         async_delete = sync_to_async(self.client.delete, thread_sensitive=True)
         res = await async_delete('/manage_friends', data={"friend_id": f"{user.id}"}, **headers, content_type='application/json')
@@ -1096,48 +1096,48 @@ class ImsTests(TestCase):
 
         conv = Conversation(type=0)
         await sync_to_async(conv.save)()
-        # await sync_to_async(conv.members.add)(self.holder, user)
+        await sync_to_async(conv.members.add)(self.holder, user)
 
         token = await sync_to_async(self.login_for_test)(self.holder_login)
-        # token1 = await sync_to_async(self.login_for_test)({"email": user.email, "password": user.password})
+        token1 = await sync_to_async(self.login_for_test)({"email": user.email, "password": user.password})
         headers = {"HTTP_AUTHORIZATION": token}
         # communicator = WebsocketCommunicator(application, f"/ws/?token={token1}")
         # connected, _ = await communicator.connect()
         # self.assertTrue(connected)
 
-        # res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
-        # self.assertEqual(res.status_code, 200)
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
+        self.assertEqual(res.status_code, 200)
 
         # response = await communicator.receive_json_from()
         # self.assertEqual(response['type'], 'notify')
 
-    # async def test_messages_post_failed(self):
-    #     async_post = sync_to_async(self.client.post, thread_sensitive=True)
-    #     password = await sync_to_async(encrypt_text)('123456')
-    #     user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
+    async def test_messages_post_failed(self):
+        async_post = sync_to_async(self.client.post, thread_sensitive=True)
+        password = await sync_to_async(encrypt_text)('123456')
+        user = await sync_to_async(User.objects.create)(email="user@email.com", name='user', password=password)
 
-    #     conv = Conversation(type=0)
-    #     await sync_to_async(conv.save)()
-    #     await sync_to_async(conv.members.add)(user)
+        conv = Conversation(type=0)
+        await sync_to_async(conv.save)()
+        await sync_to_async(conv.members.add)(user)
 
-    #     token = await sync_to_async(self.login_for_test)(self.holder_login)
-    #     headers = {"HTTP_AUTHORIZATION": token}
-    #     res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
-    #     self.assertEqual(res.status_code, 400)
-    #     self.assertEqual(res.json()['code'], 1)
+        token = await sync_to_async(self.login_for_test)(self.holder_login)
+        headers = {"HTTP_AUTHORIZATION": token}
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], 1)
 
-    #     res = await sync_to_async(self.send_messages_for_test)(headers, conv.id + 1)
-    #     self.assertEqual(res.status_code, 404)
-    #     self.assertEqual(res.json()['code'], -1)
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id + 1)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
 
-    #     await sync_to_async(conv.members.add)(self.holder)
-    #     res = await sync_to_async(self.send_messages_for_test)(headers, conv.id, "")
-    #     self.assertEqual(res.status_code, 400)
-    #     self.assertEqual(res.json()['code'], -3)
+        await sync_to_async(conv.members.add)(self.holder)
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id, "")
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -3)
 
-    #     res = await sync_to_async(self.send_messages_for_test)(headers, conv.id, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-    #     self.assertEqual(res.status_code, 400)
-    #     self.assertEqual(res.json()['code'], -3)
+        res = await sync_to_async(self.send_messages_for_test)(headers, conv.id, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], -3)
 
     def test_messages_get(self):
         user = User.objects.create(email="user@email.com", name='user', password=encrypt_text('123456'))
