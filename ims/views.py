@@ -961,7 +961,7 @@ def message(req: HttpRequest):
         if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
             return request_failed(1, "Not in conversation", 400)
 
-        timestring = req.GET.get('after', '0')
+        timestring = req.GET.get('from', '0')
         if timestring != '0':
             timestamp = time2float(timestring)
         else:
