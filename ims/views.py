@@ -77,7 +77,7 @@ def register(req: HttpRequest):
     if len(name) > 20 or name == "":
         return request_failed(-3, "Name too long", 400)
     if not re.match(r"^[a-zA-Z0-9_]{1,20}$", decrypt_text(password)):
-        return (-4, "Password illegal", 400)
+        return request_failed(-4, "Password illegal", 400)
     if user is not None:
         if user.deleted:
             user.deleted = False
