@@ -1154,23 +1154,13 @@ POST请求：
 
 ```json
 {
-    "user_email": "user_email",
-    "members": ["user_email1", "user_email2"],
-    "is_chat_group": true,
-    "host_id": "user_email",
-    "name": "conversationName",
-    "avatar": "AvatarUrl",
-    "timestamp": "2025-03-13T14:30:00Z"
+    "members": [user1.id, user2.id],
+    "name": "conversationName"
 }
 ```
 
-- user_email: 创建会话的用户ID
-- members: 会话参与人ID列表
-- is_chat_group: 是否为群聊
-- host_id: 会话创建者ID，默认为创建者id
+- members: 会话参与人ID列表，不包括创建者自己
 - name: 会话名称
-- avatar: 会话头像URL
-- timestamp: 会话创建时间
 
 响应：
 请求成功时，设置状态码为200OK，返回创建会话成功的消息，成功响应格式为:
@@ -1193,6 +1183,7 @@ POST请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若有一个成员不是自己的好友，状态码400，错误码-3，错误信息"Not friend with current user."。
 - 若成员不存在，状态码404，错误码-1，错误信息"成员不存在"。
 
 #### 聊天消息发送 /conversations/messages
@@ -1229,6 +1220,8 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
             "senderid": senderId,
             "sendername": "name",
             "senderavatar": "avatar",
+            "reply_to": "reply content",
+            "reply_to_id": replyId,
             "conversation": conversationId,
             "created_time": "2025-03-13T14:30:00Z"
         },
@@ -1251,6 +1244,8 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
 - senderid: 消息发送者的id
 - sendername: 消息发送者的昵称
 - senderavatar: 消息发送者的头像
+- reply_to: 回复消息的内容
+- reply_to_id: 回复消息的id
 - conversation: 群聊id
 - created_time: 消息发送时间
 
@@ -1267,6 +1262,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 - 若用户不在会话中，状态码400，错误码1，错误信息"用户不在会话中"。
 - 若群聊内没有消息，返回正常，状态码200，messages为空列表。
+- 若没有回复的消息，则不存在reply_to和reply_to_id字段。
 
 POST请求：
 
@@ -1274,11 +1270,13 @@ POST请求：
 {
     "conversationId": "conversationId",
     "content": "messageContent",
+    "reply_to": reply_to_id
 }
 ```
 
 - conversationId: 发送消息的会话ID
 - content: 消息内容
+- reply_to: 回复消息的id(为可选项)
 
 响应：
 请求成功时，设置状态码为200OK，返回发送消息成功的消息，成功响应格式为:
@@ -1304,6 +1302,7 @@ POST请求：
 - 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
 - 若消息为空，状态码400，错误码-3，错误信息"Content is empty"。
 - 若消息过长（>255），状态码400，错误码-3，错误信息"Content too long"。
+- 若回复的消息不存在或者不在该会话中，状态码400，错误码-4，错误信息"Reply message not found"。
 
 #### 会话管理 /interface
 

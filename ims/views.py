@@ -412,10 +412,22 @@ def friend_request_handle(req: HttpRequest):
         new_conversation = Conversation(type=0)
         new_conversation.save()
         new_conversation.members.add(sender, receiver)
+
         new_itf = Interface.objects.create(conv=new_conversation, user=sender)
         new_itf.save()
         new_itf2 = Interface.objects.create(conv=new_conversation, user=receiver)
         new_itf2.save()
+
+        new_message = Message(content="我已经同意你的好友请求，可以开始聊天了~~", sender=receiver, conversation=new_conversation)
+        new_message.save()
+        channel_layer = get_channel_layer()
+        for member in new_conversation.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=new_conversation, user=member).first()
+            itf.unreads += 1
+            itf.last_message_id = new_message.id
+            itf.save()
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+
         return request_success({"message": "已接受好友申请"})
 
     elif req.method == "DELETE":
@@ -787,7 +799,7 @@ def manage_friends(req: HttpRequest):
         return request_success({"message": "删除好友成功"})
 
 @CheckRequire
-def conv(req: HttpRequest):
+def conversation(req: HttpRequest):
     if req.method not in ["GET", "POST"]:
         return BAD_METHOD
     # jwt check
@@ -800,33 +812,80 @@ def conv(req: HttpRequest):
     cur_user = User.objects.filter(id = payload["id"]).first()
 
     if req.method == "GET":
-        body = json.loads(req.body.decode("utf-8"))
+        if not Interface.objects.filter(user=cur_user).exists():
+            return request_success({"conversations": []})
         itfs = Interface.objects.filter(user = cur_user).all()
-        # 对itf进行排序,先按照itf.ontop后按照最后一条消息的时间排序
-        itfs = sorted(itfs, key=lambda x: (x.ontop, Message.objects.filter(id=x.conv.last_message_id).first().time), reverse=True)
-        return request_success({"conversations": [itf.serialize() for itf in itfs]})
+        convs = []
+        for itf in itfs:
+            conv = itf.conv
+            # print(itf.last_message_id, cur_user.id, conv.id)
+            # input()
+            if Message.objects.filter(id=itf.last_message_id).exists():
+                last_message = Message.objects.filter(id=itf.last_message_id).first()
+                last_content = last_message.content
+                last_message_time = last_message.time
+            else:
+                last_content = ""
+                last_message_time = 0
+            if conv.type == 1:
+                name = conv.ConvName
+                avatar = conv.avatar
+            else:
+                user = conv.members.exclude(id=cur_user.id).first()
+                name = user.name
+                avatar = user.avatar
+            new_return = {
+                "id": conv.id,
+                "name": name,
+                # "avatar": True if avatar else False,
+                "avatar": avatar,
+                "last_message": last_content,
+                "last_message_time": last_message_time,
+                "is_chat_group": True if conv.type == 1 else False,
+                "is_top": itf.ontop,
+                "notice_able": itf.notification,
+                "unread_count": itf.unreads
+            }
+            convs.append(new_return)
+        sorted_convs = sorted(convs, key=lambda conv: (not conv['is_top'], -conv['last_message_time']), reverse=True)
+        for conv in sorted_convs:
+            conv['last_message_time'] = "" if last_message_time == 0 else float2time(conv['last_message_time'])
+        return request_success({"conversation": sorted_convs})
     elif req.method == "POST":
         body = json.loads(req.body.decode("utf-8"))
         members = require(body, "members", "list", err_msg="Missing or error type of [members]")
-        name = require(body, "name", "str", err_msg="Missing or error type of [name]")
-        new_conv = Conversation(type=1, name=name, creator=cur_user)
+        name = require(body, "name", "string", err_msg="Missing or error type of [name]")
         for member in members:
             if not User.objects.filter(id=member).exists():
                 return request_failed(-1, "User not found", 404)
             member_user = User.objects.filter(id=member).first()
-            mem_interface = Interface(conv=new_conv, user=member_user)
-            mem_interface.save()
             if not Conversation.objects.filter(
             type=0  # 私聊类型
             ).filter(members=member_user).filter(members=cur_user).exists():
                 return request_failed(-3, "Not friend with current user.", 400)
-            new_conv.members.add(member_user)
-        new_conv.members.add(cur_user)
+            
+        new_conv = Conversation(type=1, ConvName=name, creator=cur_user)
         new_conv.save()
+        for member in members:
+            member_user = User.objects.filter(id=member).first()
+            mem_interface = Interface(conv=new_conv, user=member_user)
+            mem_interface.save()
+            new_conv.members.add(member_user)
+
+        new_conv.members.add(cur_user)
         cur_interface = Interface(conv=new_conv, user=cur_user)
         cur_interface.save()
-        return request_success({"message": "创建会话成功"})
 
+        channel_layer = get_channel_layer()
+        new_message = Message(content="欢迎大家，我们可以聊天了~~", sender=cur_user, conversation=new_conv)
+        new_message.save()
+        for member in new_conv.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=new_conv, user=member).first()
+            itf.unreads += 1
+            itf.last_message_id = new_message.id
+            itf.save()
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+        return request_success({"message": "创建会话成功"})
 
 @CheckRequire
 def message(req: HttpRequest):
@@ -875,9 +934,31 @@ def message(req: HttpRequest):
             return request_failed(-3, "Content is empty", 400)
         if len(content) > MAX_CHAR_LENGTH:
             return request_failed(-3, "Content is too long", 400)
-        new_message = Message(content=content, sender=cur_user, conversation=conv)
+        for member in conv.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=conv, user=member).first()
+            if not itf:
+                return request_failed(-1, "Interface not found", 404)
+            
+        if "reply_to" in body:
+            reply_to_id = require(body, "reply_to", "int", err_msg="Error type of [reply_to]")
+            if not Message.objects.filter(id=reply_to_id).exists():
+                return request_failed(-4, "Reply message not found", 400)
+            reply_to = Message.objects.filter(id=reply_to_id).first()
+            if reply_to.conversation != conv:
+                return request_failed(-4, "Reply message not found", 400)
+            new_message = Message(content=content, sender=cur_user, conversation=conv, reply_to=reply_to)
+        else:
+            new_message = Message(content=content, sender=cur_user, conversation=conv)
         new_message.save()
-        return request_success()
+        channel_layer = get_channel_layer()
+        for member in conv.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=conv, user=member).first()
+            itf.unreads += 1
+            itf.last_message_id = new_message.id
+            itf.save()
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+
+        return request_success({"message": "成功发送"})
     
     elif req.method == "GET":
         conv_id = int(req.GET.get('conversationId'))
@@ -894,14 +975,21 @@ def message(req: HttpRequest):
         else:
             timestamp = 0
         
-        messages = Message.objects.filter(time__gte=timestamp).order_by('time')
+        messages = Message.objects.filter(conversation=conv).exclude(invisible_to=cur_user).filter(time__gte=timestamp).order_by('time')
         itf = Interface.objects.filter(conv=conv, user=cur_user).first()
-        if not itf:
-            return request_failed(-1, "Interface not found", 404)
-        itf.unread = 0
+        itf.unreads = 0
         itf.save()
-        return request_success({"messages": [msg.serialize() for msg in messages]})
 
+        return_message = []
+        for msg in messages:
+            ret = msg.serialize()
+            if (msg.reply_to != None) and (not msg.reply_to.invisible_to.filter(id=cur_user.id).exists()):
+                ret['reply_to'] = msg.reply_to.content
+                ret['reply_to_id'] = msg.reply_to.id
+            if (msg.sender != cur_user) and (not msg.read_by.filter(id=cur_user.id).exists()):
+                msg.read_by.add(cur_user)
+            return_message.append(ret)
+        return request_success({"messages": return_message})
 
 @CheckRequire
 def conv_manage_admin(req: HttpRequest):
@@ -914,18 +1002,21 @@ def conv_manage_admin(req: HttpRequest):
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     cur_user = User.objects.filter(id=payload["id"]).first()
-    conversation_id = req.GET.get("conversation_id", "")
+    body = json.loads(req.body.decode("utf-8"))
+    conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
     conv = Conversation.objects.filter(id=conversation_id).first()
     if not conv:
         return request_failed(-1, "Conversation not found", 404)
     if conv.creator != cur_user:
         return request_failed(-3, "非群主不能设置管理员", 403)
-    set_user_id = req.GET.get("user", "")
+    set_user_id = require(body, "user", "int", err_msg="Missing or error type of [user]")
     set_user = User.objects.filter(id=set_user_id).first()
     if set_user == cur_user:
         return request_failed(3, "不能设置自己为管理员", 403)
     if not set_user:
         return request_failed(-1, "User not found", 404)
+    if set_user == cur_user:
+        return request_failed(3, "不能设置自己为管理员", 403)
     if set_user not in conv.members.all():
         return request_failed(1, "User not in conversation", 400)
     if req.method == "POST":
@@ -961,12 +1052,12 @@ def conv_manage_info(req: HttpRequest):
     body = json.loads(req.body.decode("utf-8"))
 
     if 'name' in body.keys():
-        name = require(body, "name", "str", err_msg="Missing or error type of [name]")
+        name = require(body, "name", "string", err_msg="Missing or error type of [name]")
         conv.ConvName = name
         notif_name = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}将群名称修改为{name}")
         notif_name.save()
     if 'avatar' in body.keys():
-        avatar = require(body, "avatar", "str", err_msg="Missing or error type of [avatar]")
+        avatar = require(body, "avatar", "string", err_msg="Missing or error type of [avatar]")
         conv.avatar = avatar
         notif_avatar = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}修改了群头像")
         notif_avatar.save()
@@ -1164,6 +1255,8 @@ def conv_handle_invitation(req: HttpRequest):
         invitation.save()
         conv.members.add(invitation.receiver)
         conv.save()
+        itf = Interface(conversation=conv, user=invitation.receiver)
+        itf.save()
 
         # 向被邀请进群的用户发送通知
         channel_layer = get_channel_layer()
@@ -1175,10 +1268,10 @@ def conv_handle_invitation(req: HttpRequest):
         )
 
         # 设置新入群成员对于聊天记录为全部可见,notification为默认全部可见
-        for message in Message.objects.filter(conversation=conv):
-            message.visible_to.add(invitation.receiver)
-        itf = Interface(conversation=conv, user=invitation.receiver)
-        itf.save()
+        # for message in Message.objects.filter(conversation=conv):
+        #     message.visible_to.add(invitation.receiver)
+
+        
         return request_success({"message": "同意该用户入群"})
 
     elif req.method == "DELETE":
