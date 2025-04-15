@@ -87,7 +87,8 @@ class Interface(models.Model):
             "user": self.user.id,
             "notification": self.notification,
             "unreads": self.unreads,
-            "ontop": self.ontop
+            "ontop": self.ontop,
+            "conversation": self.conv.serialize()
         }
     def __str__(self) -> str:
         return f"interface {self.id} of user {self.user.id} in conversation {self.conv.id}"
