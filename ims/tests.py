@@ -1281,7 +1281,7 @@ class ImsTests(TestCase):
     #     self.assertEqual(res.status_code, 200)
     #     print(self.json()['conversation'])
 
-    # def test_for_interface(self):
+    # def test_interface(self):
     #     convs = self.create_conversations_for_test()
 
     #     self.client.post('/conversations/messages', data={"conversationId": f'{convs['convs'][0]}', "content": "from user3"}, **convs["headers"][2], content_type='application/json')
@@ -1314,3 +1314,95 @@ class ImsTests(TestCase):
     #     res = self.client.get('/interface', {"conversationId": f'{convs['convs'][0]}'}, **convs["headers"][3])
     #     self.assertEqual(res.status_code, 200)
     #     print(res.json())
+
+    # def test_manage_admin(self):
+    #     temp_user1 = User.objects.create(email="temp_email1@email.com", name='temp_user1', password=encrypt_text('123456'))
+    #     temp_user2 = User.objects.create(email="temp_email2@email.com", name='temp_user2', password=encrypt_text('123456'))
+    #     temp_user3 = User.objects.create(email="temp_email3@email.com", name='temp_user3', password=encrypt_text('123456'))
+    #     temp_user4 = User.objects.create(email="temp_email4@email.com", name='temp_user4', password=encrypt_text('123456'))
+    #     temp_user5 = User.objects.create(email="temp_email5@email.com", name='temp_user5', password=encrypt_text('123456'))
+
+    #     data = {
+    #         "members": [temp_user1.id, temp_user2.id, temp_user3.id, temp_user4.id],
+    #         "name": "conv"
+    #     }
+    #     headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+    #     res = self.client.post('/conversations', data=data, **headers, content_type='application/json')
+    #     self.assertEqual(res.status_code, 200)
+    #     conv = Conversation.objects.filter(type=1).filter(ConvName="conv").first()
+
+    #     print("creator: ", conv.creator)
+    #     print("manager: ", conv.managers)
+    #     print("member: ", conv.members)
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": temp_user5.id + 1
+    #     }
+    #     res = self.client.post('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+    #     self.assertEqual(res.status_code, 404)
+    #     self.assertEqual(res.json()['code'], -1)
+
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": temp_user5.id
+    #     }
+    #     res = self.client.post('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+    #     self.assertEqual(res.status_code, 400)
+    #     self.assertEqual(res.json()['code'], 1)
+
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": temp_user1.id
+    #     }
+    #     res = self.client.post('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+    #     self.assertEqual(res.status_code, 200)
+
+    #     print("creator: ", conv.creator)
+    #     print("manager: ", conv.managers)
+    #     print("member: ", conv.members)
+        
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": temp_user2.id
+    #     }
+    #     headers1 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": temp_user1.email, "password": temp_user1.password})}
+    #     res = self.client.post('/conversations/manage/admin', data=data, **headers1, content_type='application/json')
+    #     self.assertEqual(res.status_code, 403)
+    #     self.assertEqual(res.json()['code'], -3)
+        
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": temp_user2.id
+    #     }
+    #     headers3 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": temp_user3.email, "password": temp_user3.password})}
+    #     res = self.client.post('/conversations/manage/admin', data=data, **headers3, content_type='application/json')
+    #     self.assertEqual(res.status_code, 403)
+    #     self.assertEqual(res.json()['code'], -3)
+
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": temp_user1.id
+    #     }
+    #     res = self.client.post('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+    #     self.assertEqual(res.status_code, 403)
+    #     self.assertEqual(res.json()['code'], 3)
+
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": self.holder_id
+    #     }
+    #     res = self.client.post('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+    #     # TODO: 群主把自己设为管理员...？(前端处理)
+    #     self.assertEqual(res.status_code, 403)
+    #     self.assertEqual(res.json()['code'], 3)
+
+    #     data = {
+    #         "conversation_id": conv.id,
+    #         "user": temp_user1.id
+    #     }
+    #     res = self.client.delete('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+    #     self.assertEqual(res.status_code, 200)
+
+    #     print("creator: ", conv.creator)
+    #     print("manager: ", conv.managers)
+    #     print("member: ", conv.members)
