@@ -40,7 +40,7 @@ class User(models.Model):
         }
     
     def __str__(self) -> str:
-        return self.id
+        return f'{self.id}'
 
 class Conversation(models.Model):
     # types: 0-private, 1-group
@@ -52,7 +52,6 @@ class Conversation(models.Model):
     avatar = models.CharField(max_length=MAX_AVATAR_LENGTH)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="creator")
     managers = models.ManyToManyField(User, related_name="managers")
-    last_message_id = models.IntegerField(default=-1)
     
     class Meta:
         indexes = [models.Index(fields=["id"])]
@@ -64,7 +63,6 @@ class Conversation(models.Model):
             "type": self.type,
             "avatar": self.avatar if type == 1 else "",
             "creator": self.creator.id,
-            "last_message_id": self.last_message_id,
         }
 
     def __str__(self) -> str:
@@ -77,6 +75,7 @@ class Interface(models.Model):
     notification = models.BooleanField(default=True)
     unreads = models.IntegerField(default=0)
     ontop = models.BooleanField(default=False)
+    last_message_id = models.IntegerField(default=-1)
 
     class Meta:
         indexes = [models.Index(fields=["id"])]
@@ -99,7 +98,9 @@ class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     time = models.FloatField(default=utils_time.get_timestamp)
-    visible_to = models.ManyToManyField(User, related_name="visible_to")
+    invisible_to = models.ManyToManyField(User, related_name="invisible_to")
+    reply_to = models.ForeignKey("self", on_delete=models.CASCADE, related_name='replies', null=True)
+    read_by = models.ManyToManyField(User, related_name="read_messages")
 
     class Meta:
         indexes = [models.Index(fields=["id", "time"])]
@@ -110,8 +111,8 @@ class Message(models.Model):
             "content": self.content,
             "senderid": self.sender.id,
             "sendername": self.sender.name,
-            # "senderavatar": self.sender.avatar,
-            "senderavatar": "true" if self.sender.avatar else "false",
+            "senderavatar": self.sender.avatar,
+            # "senderavatar": "true" if self.sender.avatar else "false",
             "conversation": self.conversation.id,
             "created_time": float2time(self.time)
         }
