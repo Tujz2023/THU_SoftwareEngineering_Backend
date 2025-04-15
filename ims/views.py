@@ -813,7 +813,7 @@ def conversation(req: HttpRequest):
 
     if req.method == "GET":
         if not Interface.objects.filter(user=cur_user).exists():
-            return request_success({"conversations": []})
+            return request_success({"conversation": []})
         itfs = Interface.objects.filter(user = cur_user).all()
         convs = []
         for itf in itfs:
