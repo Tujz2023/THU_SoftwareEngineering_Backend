@@ -790,7 +790,7 @@ def manage_friends(req: HttpRequest):
 #                 return request_failed(-3, "Not friend with current user.", 400)
 #             new_conv.members.add(member_user)
 #         new_conv.save()
-#         return request_success({"conversation": new_conv.serialize(), "interface": Interface.objects.filter(conv=new_conv, user=cur_user).first().serialize()})
+        # return request_success({"conversation": new_conv.serialize(), "interface": Interface.objects.filter(conv=new_conv, user=cur_user).first().serialize()})
 
 
 @CheckRequire
@@ -980,6 +980,9 @@ def conv_manage_ownership(req: HttpRequest):
 #     if req.method == "POST":
 #         if cur_user not in conv.members.all():
 #             return request_failed(-1, "你不在群组中，无法退出", 400)
+#         if cur_user == conv.creator:
+#             conv.delete()
+#             return request_success({"message":"群组解散成功"})
 #         conv.members.remove(cur_user)
 #         if cur_user in conv.managers.all():
 #             conv.managers.remove(cur_user)
@@ -994,6 +997,8 @@ def conv_manage_ownership(req: HttpRequest):
 #             return request_failed(-1, "User not found", 404)
 #         if set_user not in conv.members.all():
 #             return request_failed(1, "User not in conversation", 400)
+#         if set_user in conv.managers.all() and cur_user != conv.creator:
+#             return request_failed(-3, "非群主不能移除管理员", 403)
 #         conv.members.remove(set_user)
 #         if set_user in conv.managers.all():
 #             conv.managers.remove(set_user)
@@ -1118,13 +1123,13 @@ def conv_handle_invitation(req: HttpRequest):
         invitation.save()
         conv.members.add(invitation.receiver)
         conv.save()
+        itf = Interface(conversation=conv, user=invitation.receiver)
+        itf.save()
         return request_success({"message": "同意该用户入群"})
 
     elif req.method == "DELETE":
         invitation.status = 1 # rejected
         invitation.save()
-        conv.members.remove(invitation.receiver)
-        conv.save()
         return request_success({"message": "拒绝该用户入群"})
 
 @CheckRequire
