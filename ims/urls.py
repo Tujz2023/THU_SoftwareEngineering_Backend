@@ -16,6 +16,7 @@ urlpatterns = [
     path('groups/members', views.manage_group_members),
     path('friends',views.get_friends_list),
     path('manage_friends',views.manage_friends),
+    path('search_user_detail', views.search_user_detail),
     # path('conversations', views.conv),
     path('conversations/messages', views.message),
     path('conversations/manage/admin', views.conv_manage_admin),

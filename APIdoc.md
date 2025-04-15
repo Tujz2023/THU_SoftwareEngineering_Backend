@@ -1578,15 +1578,61 @@ DELETE请求：请求体与POST方法相同。
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 权限不足，状态码403，错误码-3，错误信息"非群主不能设置管理员"。
 
-#### 发布群公告/conversations/manage/notifications
+#### 查看、发布及删除群公告/conversations/manage/notifications
 
-该API用于发布群公告。
+该API用于查看、发布和删除群公告。
+
+GET请求：
+
+```json
+{
+    "conversation_id": conversation_id,
+}
+```
+
+- conversation_id: 查看群公告的会话ID
+
+响应：
+请求成功时，设置状态码为200OK，返回群公告内容，成功响应格式为:
+
+```json
+{
+    "code": 0,
+    "info": "success",
+    "notifications": [
+        {
+            "notification_id": notification_id,
+            "content": "公告内容",
+            "sender_name": "senderName",
+            "timestamp": "2025-03-13T14:30:00Z"
+        },
+        {
+            "notification_id": notification_id,
+            "content": "公告内容",
+            "sender_name": "senderName",
+            "timestamp": "2025-03-13T14:30:00Z"
+        }
+    ]
+}
+```
+
+请求失败时，错误相应的格式为：  
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+
 
 POST请求：
 
 ```json
 {
-    "conversation_id": "conversationId",
+    "conversation_id": conversationId,
     "content": "content",
 }
 ```
@@ -1616,6 +1662,41 @@ POST请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若发布公告的非群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能发布公告"。
+
+DELETE请求：
+
+```json
+{
+    "notification_id": notification_id,
+}
+```
+
+- notification_id: 要删除的公告ID
+
+响应：
+请求成功时，设置状态码为200OK，返回删除群公告成功的消息，成功响应格式为:
+
+```json
+{  
+    "code": 0,
+    "info": "Succeed",
+    "message": "删除群公告成功"
+}
+```
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若要删除的公告不存在，状态码404，错误码-1，错误信息"Notification not found"。
+- 若要删除的公告不是群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能删除公告"。
+
 
 #### 群主转让/conversations/manage/ownership_transfer
 
