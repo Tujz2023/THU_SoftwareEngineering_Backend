@@ -63,7 +63,6 @@ class Conversation(models.Model):
             "type": self.type,
             "avatar": self.avatar if type == 1 else "",
             "creator": self.creator.id,
-            "last_message_id": self.last_message_id,
         }
 
     def __str__(self) -> str:

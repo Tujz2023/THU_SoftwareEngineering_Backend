@@ -690,7 +690,7 @@ def search_user_detail(req: HttpRequest):
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
     cur_user = User.objects.filter(id=payload["id"]).first()
-    user_id = req.GET.get("user_id", "")
+    user_id = req.GET.get("userId", "")
     user = User.objects.filter(id=user_id).first()
     if not user:
         return request_failed(-1, "User not found", 404)
@@ -920,15 +920,7 @@ def message(req: HttpRequest):
             return request_failed(-1, "Conversation not found", 404)
         if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
             return request_failed(1, "Not in conversation", 400)
-
-        channel_layer = get_channel_layer()
-        for member in conv.members.all():# conv的所有member
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
-            itf = Interface.objects.filter(conv=conv, user=member).first()
-            if not itf:
-                return request_failed(-1, "Interface not found", 404)
-            itf.unread += 1
-            itf.save()
+        
         content = require(body, "content", "string", err_msg="Missing or error type of [content]")
         if content == "":
             return request_failed(-3, "Content is empty", 400)
@@ -1011,8 +1003,6 @@ def conv_manage_admin(req: HttpRequest):
         return request_failed(-3, "非群主不能设置管理员", 403)
     set_user_id = require(body, "user", "int", err_msg="Missing or error type of [user]")
     set_user = User.objects.filter(id=set_user_id).first()
-    if set_user == cur_user:
-        return request_failed(3, "不能设置自己为管理员", 403)
     if not set_user:
         return request_failed(-1, "User not found", 404)
     if set_user == cur_user:
