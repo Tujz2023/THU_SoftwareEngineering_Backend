@@ -40,7 +40,7 @@ class User(models.Model):
         }
     
     def __str__(self) -> str:
-        return self.email
+        return self.id
 
 class Conversation(models.Model):
     # types: 0-private, 1-group
@@ -62,8 +62,8 @@ class Conversation(models.Model):
             "id": self.id,
             "name": self.ConvName,
             "type": self.type,
-            "avatar": self.avatar,
-            "creator": self.creator.email,
+            "avatar": self.avatar if type == 1 else "",
+            "creator": self.creator.id,
             "last_message_id": self.last_message_id,
         }
 
@@ -72,7 +72,7 @@ class Conversation(models.Model):
 
 class Interface(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
-    conv = models.OneToOneField(Conversation, on_delete=models.CASCADE)
+    conv = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     notification = models.BooleanField(default=True)
     unreads = models.IntegerField(default=0)
@@ -98,6 +98,7 @@ class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     time = models.FloatField(default=utils_time.get_timestamp)
+    visible_to = models.ManyToManyField(User, related_name="visible_to")
 
     class Meta:
         indexes = [models.Index(fields=["id", "time"])]
@@ -131,7 +132,7 @@ class Request(models.Model):
     class Meta:
         indexes = [models.Index(fields=["id"])]
     def __str__(self) -> str:
-        return f"request from {self.sender.email} to {self.receiver.email}"
+        return f"request from {self.sender.id} to {self.receiver.id}"
 
 class Invitation(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -144,7 +145,7 @@ class Invitation(models.Model):
     class Meta:
         indexes = [models.Index(fields=["id"])]
     def __str__(self) -> str:
-        return f"invitation from {self.sender.email} to {self.receiver.email} for conversation {self.conversation.id}"
+        return f"invitation from {self.sender.id} to {self.receiver.id} for conversation {self.conversation.id}"
     
 class Group(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
@@ -189,6 +190,4 @@ class Notification(models.Model):
         }
 
     def __str__(self) -> str:
-        return f"notification {self.id} from {self.sender.email} in conversation {self.conversation.id}"
-
-    
+        return f"notification {self.id} from {self.sender.id} in conversation {self.conversation.id}"

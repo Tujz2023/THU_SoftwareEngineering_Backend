@@ -751,46 +751,46 @@ def manage_friends(req: HttpRequest):
 
         return request_success({"message": "删除好友成功"})
 
-@CheckRequire
-def conv(req: HttpRequest):
-    if req.method not in ["GET", "POST"]:
-        return BAD_METHOD
-    # jwt check
-    jwt_token = req.headers.get("Authorization")
-    if jwt_token == None or jwt_token == "":
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    cur_user = User.objects.filter(id = payload["id"]).first()
+# @CheckRequire
+# def conv(req: HttpRequest):
+#     if req.method not in ["GET", "POST"]:
+#         return BAD_METHOD
+#     # jwt check
+#     jwt_token = req.headers.get("Authorization")
+#     if jwt_token == None or jwt_token == "":
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     payload = check_jwt_token(jwt_token)
+#     if payload is None:
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     cur_user = User.objects.filter(id = payload["id"]).first()
 
-    if req.method == "GET":
-        body = json.loads(req.body.decode("utf-8"))
-        conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-        conv = Conversation.objects.filter(id=conv_id).first()
-        if not conv:
-            return request_failed(-1, "Conversation not found", 404)
-        itf = Interface.objects.filter(conv = conv, user = cur_user).first()
-        if not itf:
-            return request_failed(-1, "Interface not found", 404)
-        return request_success({"conversation": conv.serialize(), "interface": itf.serialize()})
-    elif req.method == "POST":
-        body = json.loads(req.body.decode("utf-8"))
-        members = require(body, "members", "list", err_msg="Missing or error type of [members]")
-        new_conv = Conversation(type=1,)
-        for member in members:
-            if not User.objects.filter(email=member).exists():
-                return request_failed(-1, "User not found", 404)
-            member_user = User.objects.filter(email=member).first()
-            mem_interface = Interface(conv=new_conv, user=member_user)
-            mem_interface.save()
-            if not Conversation.objects.filter(
-            type=0  # 私聊类型
-            ).filter(members=member_user).filter(members=cur_user).exists():
-                return request_failed(-3, "Not friend with current user.", 400)
-            new_conv.members.add(member_user)
-        new_conv.save()
-        return request_success({"conversation": new_conv.serialize(), "interface": Interface.objects.filter(conv=new_conv, user=cur_user).first().serialize()})
+#     if req.method == "GET":
+#         body = json.loads(req.body.decode("utf-8"))
+#         conv_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+#         conv = Conversation.objects.filter(id=conv_id).first()
+#         if not conv:
+#             return request_failed(-1, "Conversation not found", 404)
+#         itf = Interface.objects.filter(conv = conv, user = cur_user).first()
+#         if not itf:
+#             return request_failed(-1, "Interface not found", 404)
+#         return request_success({"conversation": conv.serialize(), "interface": itf.serialize()})
+#     elif req.method == "POST":
+#         body = json.loads(req.body.decode("utf-8"))
+#         members = require(body, "members", "list", err_msg="Missing or error type of [members]")
+#         new_conv = Conversation(type=1,)
+#         for member in members:
+#             if not User.objects.filter(email=member).exists():
+#                 return request_failed(-1, "User not found", 404)
+#             member_user = User.objects.filter(email=member).first()
+#             mem_interface = Interface(conv=new_conv, user=member_user)
+#             mem_interface.save()
+#             if not Conversation.objects.filter(
+#             type=0  # 私聊类型
+#             ).filter(members=member_user).filter(members=cur_user).exists():
+#                 return request_failed(-3, "Not friend with current user.", 400)
+#             new_conv.members.add(member_user)
+#         new_conv.save()
+#         return request_success({"conversation": new_conv.serialize(), "interface": Interface.objects.filter(conv=new_conv, user=cur_user).first().serialize()})
 
 
 @CheckRequire
@@ -962,80 +962,80 @@ def conv_manage_ownership(req: HttpRequest):
     conv.save()
     return request_success({"message":"群主转让成功"})
 
-@CheckRequire
-def conv_member_remove(req: HttpRequest):
-    if req.method not in ["POST", "DELETE"]:
-        return BAD_METHOD
-    jwt_token = req.headers.get("Authorization")
-    if jwt_token == None or jwt_token == "":
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
-    cur_user = User.objects.filter(id=payload["id"]).first()
-    conversation_id = req.GET.get("conversation_id", "")
-    conv = Conversation.objects.filter(id=conversation_id).first()
-    if not conv:
-        return request_failed(-1, "Conversation not found", 404)
-    if req.method == "POST":
-        if cur_user not in conv.members.all():
-            return request_failed(-1, "你不在群组中，无法退出", 400)
-        conv.members.remove(cur_user)
-        if cur_user in conv.managers.all():
-            conv.managers.remove(cur_user)
-        conv.save()
-        return request_success({"message":"退出群组成功"})
-    elif req.method == "DELETE":
-        if conv.creator != cur_user and cur_user not in conv.managers.all():
-            return request_failed(-3, "非群主或管理员不能移除群成员", 403)
-        set_user_id = req.GET.get("user", "")
-        set_user = User.objects.filter(id=set_user_id).first()
-        if not set_user:
-            return request_failed(-1, "User not found", 404)
-        if set_user not in conv.members.all():
-            return request_failed(1, "User not in conversation", 400)
-        conv.members.remove(set_user)
-        if set_user in conv.managers.all():
-            conv.managers.remove(set_user)
-        conv.save()
-        return request_success({"message":"移除群成员成功"})
+# @CheckRequire
+# def conv_member_remove(req: HttpRequest):
+#     if req.method not in ["POST", "DELETE"]:
+#         return BAD_METHOD
+#     jwt_token = req.headers.get("Authorization")
+#     if jwt_token == None or jwt_token == "":
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     payload = check_jwt_token(jwt_token)
+#     if payload is None:
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     cur_user = User.objects.filter(id=payload["id"]).first()
+#     conversation_id = req.GET.get("conversation_id", "")
+#     conv = Conversation.objects.filter(id=conversation_id).first()
+#     if not conv:
+#         return request_failed(-1, "Conversation not found", 404)
+#     if req.method == "POST":
+#         if cur_user not in conv.members.all():
+#             return request_failed(-1, "你不在群组中，无法退出", 400)
+#         conv.members.remove(cur_user)
+#         if cur_user in conv.managers.all():
+#             conv.managers.remove(cur_user)
+#         conv.save()
+#         return request_success({"message":"退出群组成功"})
+#     elif req.method == "DELETE":
+#         if conv.creator != cur_user and cur_user not in conv.managers.all():
+#             return request_failed(-3, "非群主或管理员不能移除群成员", 403)
+#         set_user_id = req.GET.get("user", "")
+#         set_user = User.objects.filter(id=set_user_id).first()
+#         if not set_user:
+#             return request_failed(-1, "User not found", 404)
+#         if set_user not in conv.members.all():
+#             return request_failed(1, "User not in conversation", 400)
+#         conv.members.remove(set_user)
+#         if set_user in conv.managers.all():
+#             conv.managers.remove(set_user)
+#         conv.save()
+#         return request_success({"message":"移除群成员成功"})
     
-@CheckRequire
-def conv_member_add(req: HttpRequest):
-    if req.method != "POST":
-        return BAD_METHOD
-    jwt_token = req.headers.get("Authorization")
-    if not jwt_token:
-        return request_failed(-2, "Invalid or expired JWT", 401)
+# @CheckRequire
+# def conv_member_add(req: HttpRequest):
+#     if req.method != "POST":
+#         return BAD_METHOD
+#     jwt_token = req.headers.get("Authorization")
+#     if not jwt_token:
+#         return request_failed(-2, "Invalid or expired JWT", 401)
 
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     payload = check_jwt_token(jwt_token)
+#     if payload is None:
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
-    cur_user = User.objects.filter(id=payload["id"]).first()
-    body = json.loads(req.body.decode("utf-8"))
-    conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-    member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
+#     cur_user = User.objects.filter(id=payload["id"]).first()
+#     body = json.loads(req.body.decode("utf-8"))
+#     conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+#     member_id = require(body, "member_id", "int", err_msg="Missing or error type of [member_id]")
 
-    conv = Conversation.objects.filter(id=conversation_id).first()
+#     conv = Conversation.objects.filter(id=conversation_id).first()
 
-    existing_member = conv.members.filter(id=member_id).first()# 检查是否已经在群聊中
-    if existing_member:
-        return request_failed(-3, "The member is already in the conversation", 403)
+#     existing_member = conv.members.filter(id=member_id).first()# 检查是否已经在群聊中
+#     if existing_member:
+#         return request_failed(-3, "The member is already in the conversation", 403)
     
-    member = User.objects.filter(id=member_id).first()# 检查是不是自己的好友
-    if not Conversation.objects.filter(type=0).filter(members=member).filter(members=cur_user).exists():
-        return request_failed(-4, "The user is not your friend", 403)
+#     member = User.objects.filter(id=member_id).first()# 检查是不是自己的好友
+#     if not Conversation.objects.filter(type=0).filter(members=member).filter(members=cur_user).exists():
+#         return request_failed(-4, "The user is not your friend", 403)
 
-    invitation = Invitation(
-        sender=cur_user,
-        receiver=member,
-        conversation=conv,
-        status=0 # waiting
-    )
-    invitation.save()
+#     invitation = Invitation(
+#         sender=cur_user,
+#         receiver=member,
+#         conversation=conv,
+#         status=0 # waiting
+#     )
+#     invitation.save()
 
-    return request_success({"message": "邀请成功，等待管理员确认"})
+#     return request_success({"message": "邀请成功，等待管理员确认"})
 
 @CheckRequire
 def conv_invitation(req: HttpRequest,conversation_id:int):# 用于所有群成员查看邀请，但是只有群主和管理员可以处理（handle函数）
