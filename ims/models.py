@@ -191,3 +191,10 @@ class Notification(models.Model):
 
     def __str__(self) -> str:
         return f"notification {self.id} from {self.sender.id} in conversation {self.conversation.id}"
+    
+# class files(models.Model):
+#     id = models.BigAutoField(primary_key=True, unique=True)
+#     type = models.BooleanField(default=False) # 0-audio/video, 1-picture
+#     file = models.FileField(upload_to='files/', default=None)
+
+#     message = models.OneToOneField(Message, on_delete=models.CASCADE, related_name="files")
