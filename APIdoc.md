@@ -257,7 +257,7 @@ PUT请求：
 
 ```json
 {
-    "quey_name": "target_name"
+    "query_name": "target_name"
 }
 ```
 
