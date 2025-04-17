@@ -251,7 +251,7 @@ def search_users(req: HttpRequest):
             "user_id": user.id,
             "name": user.name,
             "email": user.email,
-            # "avatar": user.avatar,
+            "avatar": user.avatar,
             "is_friend": False if user == user_cur else Conversation.objects.filter(type=0).filter(members=user_cur).filter(members=user).exists(),
             "deleted": user.deleted,
         }
