@@ -1033,6 +1033,35 @@ def image(req: HttpRequest):
         return request_success({"message": "成功发送"})
 
 @CheckRequire
+def get_reply(req: HttpRequest):
+    if req.method != "GET":
+        return BAD_METHOD
+    
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+
+    msgid = int(req.GET.get("message_id", ""))
+    if not Message.objects.filter(id=msgid).exists():
+        return request_failed(-1, "Message not found", 404)
+    
+    replies = Message.objects.filter(reply_to_id=msgid).exclude(invisible_to=cur_user).order_by('time')
+    return_message = []
+    for msg in replies:
+        return_message.append({
+            "reply_id": msg.id,
+            "sender_id": msg.sender.id,
+            "sender_name": msg.sender.name,
+            "sender_avatar": msg.sender.avatar,
+            "content": msg.content,
+            "time": time2float(msg.time),
+        })
+
+@CheckRequire
 def conv_manage_admin(req: HttpRequest):
     if req.method not in ["POST", "DELETE"]:
         return BAD_METHOD
@@ -1253,7 +1282,7 @@ def conv_invitation(req: HttpRequest,conversation_id:int):# 用于所有群成�
             "sender_name": invitation.sender.name,
             "receiver_id": invitation.receiver.id,
             "receiver_name": invitation.receiver.name,
-            "timestamp": datetime.datetime.fromtimestamp(invitation.time).strftime('%Y-%m-%d %H:%M:%S'),
+            "timestamp": time2float(invitation.time),
             "status": invitation.status,
         })
 

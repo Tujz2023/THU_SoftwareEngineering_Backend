@@ -1351,6 +1351,70 @@ POST请求(只用于发送图片，并且图片信息不可以用来回复其他
 - 若当前用户并没有在会话中，状态码400，错误码1，错误信息“Not in conversation”。
 - 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
 
+#### 查看回复列表 /conversations/get_reply
+
+该API用于查看回复列表。  
+
+GET请求：
+
+请求体：
+
+```json
+{
+    "message_id": message_id,
+}
+```
+
+- message_id: 查看回复列表的消息ID
+
+响应：
+请求成功时，设置状态码为200OK，返回回复列表，成功响应格式为:
+
+```json
+{
+    "code": 0,
+    "info": "success",
+    "replies": [
+        {
+            "reply_id": reply_id,
+            "sender_id": sender_id,
+            "sender_name": "sender_name",
+            "sender_avatar": "AvatarUrl",
+            "content": "replyContent",
+            "timestamp": "2025-03-13T14:30:00Z"
+        },
+        {
+            "reply_id": reply_id,
+            "sender_id": sender_id,
+            "sender_name": "sender_name",
+            "sender_avatar": "AvatarUrl",
+            "content": "replyContent",
+            "timestamp": "2025-03-13T14:30:00Z"
+        }
+    ]
+}
+```
+
+- replies: 回复列表，包含回复ID、发送者ID、发送者昵称、发送者头像、回复内容、回复时间等。
+- reply_id: 回复ID
+- sender_id: 发送者ID
+- sender_name: 发送者昵称
+- sender_avatar: 发送者头像URL
+- content: 回复内容
+- timestamp: 回复时间
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若消息不存在，状态码404，错误码-1，错误信息"Message not found"。
+
 #### 会话管理 /interface
 
 该API用于管理特定的会话，包括查看会话详情，聊天记录，置顶会话，免打扰会话
