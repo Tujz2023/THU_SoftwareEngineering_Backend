@@ -1216,7 +1216,8 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
     "messages": [
         {
             "id": id,
-            "content": "content",
+            "type": 1,
+            "content": "image.url",
             "senderid": senderId,
             "sendername": "name",
             "senderavatar": "avatar",
@@ -1227,6 +1228,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
         },
         {
             "id": id,
+            "type": 0,
             "content": "content",
             "senderid": senderId,
             "sendername": "name",
@@ -1240,7 +1242,8 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
 ```
 
 - id: 消息的id
-- content: 消息的内容
+- type: 消息的类型，0为普通消息，1为图片
+- content: 消息的内容，若type=1的时候，为图片的url
 - senderid: 消息发送者的id
 - sendername: 消息发送者的昵称
 - senderavatar: 消息发送者的头像
@@ -1264,7 +1267,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
 - 若群聊内没有消息，返回正常，状态码200，messages为空列表。
 - 若没有回复的消息，则不存在reply_to和reply_to_id字段。
 
-POST请求：
+POST请求(只用于发送普通类型的消息)：
 
 ```json
 {
@@ -1303,6 +1306,48 @@ POST请求：
 - 若消息为空，状态码400，错误码-3，错误信息"Content is empty"。
 - 若消息过长（>255），状态码400，错误码-3，错误信息"Content too long"。
 - 若回复的消息不存在或者不在该会话中，状态码400，错误码-4，错误信息"Reply message not found"。
+
+#### 聊天消息发送 /conversations/image
+
+该API用于发送和接收消息列表。
+
+POST请求(只用于发送图片，并且图片信息不可以用来回复其他消息)：
+
+需要使用authorization头部携带JWT令牌。
+
+使用formdata把图片传过来，具体地：
+```json
+{
+    "conversationId": "conversationId",
+    "image": image
+}
+```
+
+- conversationId字段: 发送消息的会话ID
+- image字段: 图片
+
+响应：
+请求成功时，设置状态码为200OK，返回发送消息成功的消息，成功响应格式为:
+
+```json
+{
+    "code": 0,
+    "info": "Succeed",
+}
+```
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若当前用户并没有在会话中，状态码400，错误码1，错误信息“Not in conversation”。
+- 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
 
 #### 会话管理 /interface
 
