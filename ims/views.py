@@ -1051,15 +1051,18 @@ def get_reply(req: HttpRequest):
     
     replies = Message.objects.filter(reply_to_id=msgid).exclude(invisible_to=cur_user).order_by('time')
     return_message = []
+    
     for msg in replies:
         return_message.append({
             "reply_id": msg.id,
             "sender_id": msg.sender.id,
             "sender_name": msg.sender.name,
+            # "sender_avatar": True if msg.sender.avatar else False,
             "sender_avatar": msg.sender.avatar,
             "content": msg.content,
-            "time": time2float(msg.time),
+            "time": float2time(msg.time),
         })
+    return request_success({"replies": return_message})
 
 @CheckRequire
 def conv_manage_admin(req: HttpRequest):
@@ -1092,14 +1095,20 @@ def conv_manage_admin(req: HttpRequest):
             return request_failed(3, "成员已经是管理员", 403)
         conv.managers.add(set_user)
         conv.save()
+        channel_layer = get_channel_layer()
+        for member in conv.members.all():
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
         return request_success({"message":"设置群组管理员成功"})
     elif req.method == "DELETE":
         if set_user not in conv.managers.all():
             return request_failed(3, "成员不是管理员", 403)
         conv.managers.remove(set_user)
         conv.save()
+        channel_layer = get_channel_layer()
+        for member in conv.members.all():
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
         return request_success({"message":"解除群组管理员成功"})
-    
+        
 @CheckRequire
 def conv_manage_info(req: HttpRequest):
     if req.method != "POST":
@@ -1111,25 +1120,25 @@ def conv_manage_info(req: HttpRequest):
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     cur_user = User.objects.filter(id=payload["id"]).first()
-    conversation_id = req.GET.get("conversation_id", "")
+    body = json.loads(req.body.decode("utf-8"))
+
+    conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
     conv = Conversation.objects.filter(id=conversation_id).first()
     if not conv:
         return request_failed(-1, "Conversation not found", 404)
     if conv.creator != cur_user and cur_user not in conv.managers.all():
         return request_failed(-3, "非群主或管理员不能修改群信息", 403)
-    body = json.loads(req.body.decode("utf-8"))
 
-    if 'name' in body.keys():
+    if 'name' in body:
         name = require(body, "name", "string", err_msg="Missing or error type of [name]")
         conv.ConvName = name
-        notif_name = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}将群名称修改为{name}")
-        notif_name.save()
-    if 'avatar' in body.keys():
+    if 'avatar' in body:
         avatar = require(body, "avatar", "string", err_msg="Missing or error type of [avatar]")
         conv.avatar = avatar
-        notif_avatar = Notification(sender=cur_user, conversation=conv, content=f"{cur_user.name}修改了群头像")
-        notif_avatar.save()
     conv.save()
+    channel_layer = get_channel_layer()
+    for member in conv.members.all():
+        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
     return request_success({"message":"修改群信息成功"})
     
 @CheckRequire
@@ -1143,13 +1152,17 @@ def conv_manage_ownership(req: HttpRequest):
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     cur_user = User.objects.filter(id=payload["id"]).first()
-    conversation_id = req.GET.get("conversation_id", "")
+
+    body = json.loads(req.body.decode("utf-8"))
+    conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
+    set_user_id = require(body, "user", "int", err_msg="Missing or error type of [uid]")
+
     conv = Conversation.objects.filter(id=conversation_id).first()
     if not conv:
         return request_failed(-1, "Conversation not found", 404)
     if conv.creator != cur_user:
         return request_failed(-3, "非群主不能转让群主", 403)
-    set_user_id = req.GET.get("user", "")
+    
     set_user = User.objects.filter(id=set_user_id).first()
     if not set_user:
         return request_failed(-1, "User not found", 404)
@@ -1161,6 +1174,9 @@ def conv_manage_ownership(req: HttpRequest):
         conv.managers.remove(set_user)
     conv.creator = set_user
     conv.save()
+    channel_layer = get_channel_layer()
+    for member in conv.members.all():
+        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
     return request_success({"message":"群主转让成功"})
 
 # @CheckRequire
@@ -1253,166 +1269,166 @@ def conv_manage_ownership(req: HttpRequest):
 
 #     return request_success({"message": "邀请成功，等待管理员确认"})
 
-@CheckRequire
-def conv_invitation(req: HttpRequest,conversation_id:int):# 用于所有群成员查看邀请，但是只有群主和管理员可以处理（handle函数）
-    if req.method != "GET":
-        return BAD_METHOD
-    jwt_token = req.headers.get("Authorization")
-    if not jwt_token:
-        return request_failed(-2, "Invalid or expired JWT", 401)
+# @CheckRequire
+# def conv_invitation(req: HttpRequest,conversation_id:int):# 用于所有群成员查看邀请，但是只有群主和管理员可以处理（handle函数）
+#     if req.method != "GET":
+#         return BAD_METHOD
+#     jwt_token = req.headers.get("Authorization")
+#     if not jwt_token:
+#         return request_failed(-2, "Invalid or expired JWT", 401)
 
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     payload = check_jwt_token(jwt_token)
+#     if payload is None:
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
-    conv = Conversation.objects.filter(id=conversation_id).first()
-    if not conv:
-        return request_failed(-1, "Conversation not found", 404)
+#     conv = Conversation.objects.filter(id=conversation_id).first()
+#     if not conv:
+#         return request_failed(-1, "Conversation not found", 404)
     
-    invitations_list = Invitation.objects.filter(Conversation=conv).order_by("-time")
+#     invitations_list = Invitation.objects.filter(Conversation=conv).order_by("-time")
 
-    if not invitations_list.exists():
-        return request_success({"invitations": []})
-    invitations= []
-    for invitation in invitations_list:
-        invitations.append({
-            "invite_id": invitation.id,
-            "conversation_id": invitation.conversation.id,
-            "sender_id": invitation.sender.id,
-            "sender_name": invitation.sender.name,
-            "receiver_id": invitation.receiver.id,
-            "receiver_name": invitation.receiver.name,
-            "timestamp": time2float(invitation.time),
-            "status": invitation.status,
-        })
+#     if not invitations_list.exists():
+#         return request_success({"invitations": []})
+#     invitations= []
+#     for invitation in invitations_list:
+#         invitations.append({
+#             "invite_id": invitation.id,
+#             "conversation_id": invitation.conversation.id,
+#             "sender_id": invitation.sender.id,
+#             "sender_name": invitation.sender.name,
+#             "receiver_id": invitation.receiver.id,
+#             "receiver_name": invitation.receiver.name,
+#             "timestamp": time2float(invitation.time),
+#             "status": invitation.status,
+#         })
 
-    return request_success({"invitations": invitations})
+#     return request_success({"invitations": invitations})
     
     
-@CheckRequire
-def conv_handle_invitation(req: HttpRequest):
-    if req.method not in ["POST", "DELETE"]:
-        return BAD_METHOD
-    jwt_token = req.headers.get("Authorization")
-    if not jwt_token:
-        return request_failed(-2, "Invalid or expired JWT", 401)
+# @CheckRequire
+# def conv_handle_invitation(req: HttpRequest):
+#     if req.method not in ["POST", "DELETE"]:
+#         return BAD_METHOD
+#     jwt_token = req.headers.get("Authorization")
+#     if not jwt_token:
+#         return request_failed(-2, "Invalid or expired JWT", 401)
 
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+#     payload = check_jwt_token(jwt_token)
+#     if payload is None:
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
-    cur_user = User.objects.filter(id=payload["id"]).first()
-    body = json.loads(req.body.decode("utf-8"))
-    invitation_id = require(body, "invite_id", "int", err_msg="Missing or error type of [invite_id]")
-    conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
-    status = require(body, "status", "int", err_msg="Missing or error type of [status]")
+#     cur_user = User.objects.filter(id=payload["id"]).first()
+#     body = json.loads(req.body.decode("utf-8"))
+#     invitation_id = require(body, "invite_id", "int", err_msg="Missing or error type of [invite_id]")
+#     conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
+#     status = require(body, "status", "int", err_msg="Missing or error type of [status]")
 
-    conv = Conversation.objects.filter(id=conversation_id).first()
-    invitation = Invitation.objects.filter(id=invitation_id).first()
-    is_creator = conv.creator.id == cur_user.id
-    is_admin = conv.managers.filter(id=cur_user.id).exists()
+#     conv = Conversation.objects.filter(id=conversation_id).first()
+#     invitation = Invitation.objects.filter(id=invitation_id).first()
+#     is_creator = conv.creator.id == cur_user.id
+#     is_admin = conv.managers.filter(id=cur_user.id).exists()
 
-    if not is_creator and not is_admin:
-        return request_failed(-3, "非群主或管理员不能处理邀请", 403)
+#     if not is_creator and not is_admin:
+#         return request_failed(-3, "非群主或管理员不能处理邀请", 403)
 
-    if status != 0:
-        return request_failed(-4, "邀请已处理", 403)
+#     if status != 0:
+#         return request_failed(-4, "邀请已处理", 403)
     
-    if req.method == "POST":
-        invitation.status = 2 # accepted
-        invitation.save()
-        conv.members.add(invitation.receiver)
-        conv.save()
-        itf = Interface(conversation=conv, user=invitation.receiver)
-        itf.save()
+#     if req.method == "POST":
+#         invitation.status = 2 # accepted
+#         invitation.save()
+#         conv.members.add(invitation.receiver)
+#         conv.save()
+#         itf = Interface(conversation=conv, user=invitation.receiver)
+#         itf.save()
 
-        # 向被邀请进群的用户发送通知
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            str(invitation.receiver.id),
-            {
-                "type": "notify"
-            }
-        )
+#         # 向被邀请进群的用户发送通知
+#         channel_layer = get_channel_layer()
+#         async_to_sync(channel_layer.group_send)(
+#             str(invitation.receiver.id),
+#             {
+#                 "type": "notify"
+#             }
+#         )
 
-        # 设置新入群成员对于聊天记录为全部可见,notification为默认全部可见
-        # for message in Message.objects.filter(conversation=conv):
-        #     message.visible_to.add(invitation.receiver)
+#         # 设置新入群成员对于聊天记录为全部可见,notification为默认全部可见
+#         # for message in Message.objects.filter(conversation=conv):
+#         #     message.visible_to.add(invitation.receiver)
 
         
-        return request_success({"message": "同意该用户入群"})
+#         return request_success({"message": "同意该用户入群"})
 
-    elif req.method == "DELETE":
-        invitation.status = 1 # rejected
-        invitation.save()
-        return request_success({"message": "拒绝该用户入群"})
+#     elif req.method == "DELETE":
+#         invitation.status = 1 # rejected
+#         invitation.save()
+#         return request_success({"message": "拒绝该用户入群"})
 
-@CheckRequire
-def conv_manage_notifications(req: HttpRequest):
-    if req.method not in ["GET", "POST", "DELETE"]:
-        return BAD_METHOD
-    jwt_token = req.headers.get("Authorization")
-    if not jwt_token:
-        return request_failed(-2, "Invalid or expired JWT", 401)
-    payload = check_jwt_token(jwt_token)
-    if payload is None:
-        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+# @CheckRequire
+# def conv_manage_notifications(req: HttpRequest):
+#     if req.method not in ["GET", "POST", "DELETE"]:
+#         return BAD_METHOD
+#     jwt_token = req.headers.get("Authorization")
+#     if not jwt_token:
+#         return request_failed(-2, "Invalid or expired JWT", 401)
+#     payload = check_jwt_token(jwt_token)
+#     if payload is None:
+#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
-    cur_user = User.objects.filter(id=payload["id"]).first()
+#     cur_user = User.objects.filter(id=payload["id"]).first()
 
-    if req.method == "GET":
-        conversation_id = req.GET.get("conversation_id", "")
-        conv = Conversation.objects.filter(id=conversation_id).first()
-        if not conv:
-            return request_failed(-1, "Conversation not found", 404)
-        notifications = Notification.objects.filter(conversation=conv).order_by("-time")
-        if not notifications.exists():
-            return_data = []
-        else:
-            return_data = []
-            for notif in notifications:
-                return_data.append({
-                    "notification_id": notif.id,
-                    "content": notif.content,
-                    "sender_name": notif.sender.name,
-                    "timestamp": datetime.datetime.fromtimestamp(notif.time).strftime('%Y-%m-%d %H:%M:%S'),
-                })
-        return request_success({"notifications": return_data})
-    elif req.method == "POST":
-        body = json.loads(req.body.decode("utf-8"))
-        conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
-        content = require(body, "content", "string", err_msg="Missing or error type of [content]")
-        conv = Conversation.objects.filter(id=conversation_id).first()
+#     if req.method == "GET":
+#         conversation_id = req.GET.get("conversation_id", "")
+#         conv = Conversation.objects.filter(id=conversation_id).first()
+#         if not conv:
+#             return request_failed(-1, "Conversation not found", 404)
+#         notifications = Notification.objects.filter(conversation=conv).order_by("-time")
+#         if not notifications.exists():
+#             return_data = []
+#         else:
+#             return_data = []
+#             for notif in notifications:
+#                 return_data.append({
+#                     "notification_id": notif.id,
+#                     "content": notif.content,
+#                     "sender_name": notif.sender.name,
+#                     "timestamp": datetime.datetime.fromtimestamp(notif.time).strftime('%Y-%m-%d %H:%M:%S'),
+#                 })
+#         return request_success({"notifications": return_data})
+#     elif req.method == "POST":
+#         body = json.loads(req.body.decode("utf-8"))
+#         conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
+#         content = require(body, "content", "string", err_msg="Missing or error type of [content]")
+#         conv = Conversation.objects.filter(id=conversation_id).first()
 
-        is_creator = conv.creator.id == cur_user.id
-        is_admin = conv.managers.filter(id=cur_user.id).exists()
-        if not is_creator and not is_admin:
-            return request_failed(-3, "非群主或管理员不能发布公告", 403)
+#         is_creator = conv.creator.id == cur_user.id
+#         is_admin = conv.managers.filter(id=cur_user.id).exists()
+#         if not is_creator and not is_admin:
+#             return request_failed(-3, "非群主或管理员不能发布公告", 403)
         
-        notif = Notification(sender=cur_user, conversation=conv, content=content)
-        notif.save()
+#         notif = Notification(sender=cur_user, conversation=conv, content=content)
+#         notif.save()
 
-        channel_layer = get_channel_layer()
-        for member in conv.members.all():
-            async_to_sync(channel_layer.group_send)(
-                str(member.id),
-                {
-                    "type": "notification_message",
-                }
-            )
-        return request_success({"message": "发布群公告成功"})
-    elif req.method == "DELETE":
-        body = json.loads(req.body.decode("utf-8"))
-        notification_id = require(body, "notification_id", "int", err_msg="Missing or error type of [notification_id]")
-        notif = Notification.objects.filter(id=notification_id).first()
-        if not notif:
-            return request_failed(-1, "Notification not found", 404)
-        is_creator = notif.conversation.creator.id == cur_user.id
-        is_admin = notif.conversation.managers.filter(id=cur_user.id).exists()
-        if not is_creator and not is_admin:
-            return request_failed(-3, "非群主或管理员不能删除公告", 403)
-        notif.delete()
-        return request_success({"message": "删除群公告成功"})
+#         channel_layer = get_channel_layer()
+#         for member in conv.members.all():
+#             async_to_sync(channel_layer.group_send)(
+#                 str(member.id),
+#                 {
+#                     "type": "notification_message",
+#                 }
+#             )
+#         return request_success({"message": "发布群公告成功"})
+#     elif req.method == "DELETE":
+#         body = json.loads(req.body.decode("utf-8"))
+#         notification_id = require(body, "notification_id", "int", err_msg="Missing or error type of [notification_id]")
+#         notif = Notification.objects.filter(id=notification_id).first()
+#         if not notif:
+#             return request_failed(-1, "Notification not found", 404)
+#         is_creator = notif.conversation.creator.id == cur_user.id
+#         is_admin = notif.conversation.managers.filter(id=cur_user.id).exists()
+#         if not is_creator and not is_admin:
+#             return request_failed(-3, "非群主或管理员不能删除公告", 403)
+#         notif.delete()
+#         return request_success({"message": "删除群公告成功"})
 
 # @CheckRequire
 # def interface(req: HttpRequest):

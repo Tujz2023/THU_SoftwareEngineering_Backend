@@ -1458,3 +1458,103 @@ class ImsTests(TestCase):
         res = self.client.get('/conversations/messages', {"conversationId": f"{conv.id}"}, **headers)
         self.assertEqual(res.status_code, 200)
         # print(json.dumps(res.json()['messages'], indent=4, ensure_ascii=False))
+
+        res = self.client.get('/conversations/get_reply', {"message_id": msg3.id + 2}, **headers)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+        
+        res = self.client.get('/conversations/get_reply', {"message_id": msg2.id}, **headers)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json()['replies'], indent=4, ensure_ascii=False))
+        # input()
+
+        res = self.client.get('/conversations/get_reply', {"message_id": msg3.id}, **headers)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json()['replies'], indent=4, ensure_ascii=False))
+
+    def test_manage_info(self):
+        temp_user1 = User.objects.create(email="temp_email1@email.com", name='temp_user1', password=encrypt_text('123456'))
+        temp_user2 = User.objects.create(email="temp_email2@email.com", name='temp_user2', password=encrypt_text('123456'))
+        temp_user3 = User.objects.create(email="temp_email3@email.com", name='temp_user3', password=encrypt_text('123456'))
+        temp_user4 = User.objects.create(email="temp_email4@email.com", name='temp_user4', password=encrypt_text('123456'))
+        temp_user5 = User.objects.create(email="temp_email5@email.com", name='temp_user5', password=encrypt_text('123456'))
+        temp_users = [temp_user1, temp_user2, temp_user3, temp_user4, temp_user5]
+        data = {
+            "members": [temp_user1.id, temp_user2.id, temp_user3.id, temp_user4.id, temp_user5.id],
+            "name": "conv"
+        }
+        headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+        for user in temp_users:
+            self.add_friends_convs_for_test(headers, {"HTTP_AUTHORIZATION": self.login_for_test({"email": user.email, "password": user.password})}, self.holder_id, user.id)
+
+        res = self.client.post('/conversations', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        conv = Conversation.objects.filter(type=1).filter(ConvName="conv").first()
+
+        res = self.client.post('/conversations/manage/info', data={"conversation_id": conv.id + 1, "name": "Newname"}, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+
+        headers1 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": temp_user1.email, "password": temp_user1.password})}
+        res = self.client.post('/conversations/manage/info', data={"conversation_id": conv.id, "name": "Newname"}, **headers1, content_type='application/json')
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -3)
+
+        data = {
+            "conversation_id": conv.id,
+            "user": temp_user1.id
+        }
+        res = self.client.post('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.post('/conversations/manage/info', data={"conversation_id": conv.id, "name": "Newname"}, **headers1, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # for convs in Conversation.objects.all():
+        #     print(convs.ConvName)
+
+        res = self.client.post('/conversations/manage/info', data={"conversation_id": conv.id, "name": "Newname2"}, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # for convs in Conversation.objects.all():
+        #     print(convs.ConvName)
+    
+    def test_ownership_transfer(self):
+        temp_user1 = User.objects.create(email="temp_email1@email.com", name='temp_user1', password=encrypt_text('123456'))
+        temp_user2 = User.objects.create(email="temp_email2@email.com", name='temp_user2', password=encrypt_text('123456'))
+        temp_user3 = User.objects.create(email="temp_email3@email.com", name='temp_user3', password=encrypt_text('123456'))
+        temp_user4 = User.objects.create(email="temp_email4@email.com", name='temp_user4', password=encrypt_text('123456'))
+        temp_user5 = User.objects.create(email="temp_email5@email.com", name='temp_user5', password=encrypt_text('123456'))
+        temp_users = [temp_user1, temp_user2, temp_user3, temp_user4, temp_user5]
+        data = {
+            "members": [temp_user1.id, temp_user2.id, temp_user3.id, temp_user4.id, temp_user5.id],
+            "name": "conv"
+        }
+        headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+        for user in temp_users:
+            self.add_friends_convs_for_test(headers, {"HTTP_AUTHORIZATION": self.login_for_test({"email": user.email, "password": user.password})}, self.holder_id, user.id)
+        
+        res = self.client.post('/conversations', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        conv = Conversation.objects.filter(type=1).filter(ConvName="conv").first()
+
+        headers1 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": temp_user1.email, "password": temp_user1.password})}
+        data = {
+            "conversation_id": conv.id,
+            "user": temp_user1.id
+        }
+        res = self.client.post('/conversations/manage/ownership_transfer', data=data, **headers1, content_type='application/json')
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -3)
+
+        res = self.client.post('/conversations/manage/admin', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # print(Conversation.objects.filter(type=1).filter(ConvName="conv").first().creator)
+        # print(Conversation.objects.filter(type=1).filter(ConvName="conv").first().managers.all())
+
+        res = self.client.post('/conversations/manage/ownership_transfer', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # print(Conversation.objects.filter(type=1).filter(ConvName="conv").first().creator)
+        # print(Conversation.objects.filter(type=1).filter(ConvName="conv").first().managers.all())
+
+        res = self.client.post('/conversations/manage/ownership_transfer', data=data, **headers1, content_type='application/json')
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.json()['code'], -3)

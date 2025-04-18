@@ -64,4 +64,12 @@ class IMSConsumer(AsyncWebsocketConsumer):
             )
         )
 
+    async def conv_setting(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "conv_setting",
+                }
+            )
+        )
        
