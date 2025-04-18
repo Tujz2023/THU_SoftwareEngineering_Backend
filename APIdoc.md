@@ -1099,7 +1099,7 @@ GET请求：
     "info": "success",
     "conversation": [
         {
-            "id":"convid",
+            "id": convid,
             "name":"conversationName",
             "avatar":"AvatarUrl",
             "last_message":"lastMessage",
@@ -1110,12 +1110,13 @@ GET请求：
             "unread_count":0
         },
         {
-            "id":"convid",
+            "id":convid,
             "name":"conversationName",
             "avatar":"AvatarUrl",
             "last_message":"lastMessage",
             "last_message_time":"lastMessageTime",
-            "is_chat_group":true,
+            "is_chat_group":false,
+            "friend_id":friendid,
             "is_top":true,
             "notice_able":true,
             "unread_count":0
@@ -1132,6 +1133,7 @@ GET请求：
 - last_message: 最后一条消息内容
 - last_message_time: 最后一条消息时间
 - is_chat_group: 是否为群聊
+- friendid: 若是私聊，则返回好友的id(群聊时无这个字段)
 - is_top: 是否置顶
 - notice_able: 是否允许提醒
 - unread_count: 未读消息数

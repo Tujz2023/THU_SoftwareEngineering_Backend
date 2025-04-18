@@ -3,7 +3,7 @@ from django.db import models
 from utils.utils_request import return_field
 
 from utils.utils_require import MAX_CHAR_LENGTH, MAX_AVATAR_LENGTH
-from utils.utils_avatar import DEFAULT_AVATAR
+from utils.utils_avatar import DEFAULT_AVATAR, CONV_AVATAR
 from utils.utils_time import time2float, float2time
 
 class User(models.Model):
@@ -49,7 +49,7 @@ class Conversation(models.Model):
     members = models.ManyToManyField(User)
     ConvName = models.CharField(max_length=MAX_CHAR_LENGTH, default="群组")
     created_time = models.FloatField(default=utils_time.get_timestamp)
-    avatar = models.CharField(max_length=MAX_AVATAR_LENGTH)
+    avatar = models.CharField(max_length=MAX_AVATAR_LENGTH, default=CONV_AVATAR)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="creator")
     managers = models.ManyToManyField(User, related_name="managers")
     

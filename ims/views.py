@@ -847,8 +847,10 @@ def conversation(req: HttpRequest):
                 "notice_able": itf.notification,
                 "unread_count": itf.unreads
             }
+            if conv.type == 0:
+                new_return['friend_id'] = user.id
             convs.append(new_return)
-        sorted_convs = sorted(convs, key=lambda conv: (not conv['is_top'], -conv['last_message_time']), reverse=True)
+        sorted_convs = sorted(convs, key=lambda conv: (not conv['is_top'], -conv['last_message_time']))
         for conv in sorted_convs:
             conv['last_message_time'] = "" if last_message_time == 0 else float2time(conv['last_message_time'])
         return request_success({"conversation": sorted_convs})
