@@ -2090,7 +2090,7 @@ POST请求：
 ```json
 
 {
-    "conversation_id": cid
+    "conversation_id": cid,
     "name": "groupName",
     "avatar": "AvatarUrl",
 }
