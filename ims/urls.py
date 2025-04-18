@@ -19,7 +19,6 @@ urlpatterns = [
     path('search_user_detail', views.search_user_detail),
     path('conversations', views.conversation),
     path('conversations/messages', views.message),
-    path('conversations/get_reply', views.get_reply),
     path('conversations/image', views.image),
     path('conversations/get_reply', views.get_reply),
     path('conversations/manage/admin', views.conv_manage_admin),
