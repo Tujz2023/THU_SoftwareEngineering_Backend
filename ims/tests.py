@@ -1285,6 +1285,8 @@ class ImsTests(TestCase):
         res = self.client.get('/conversations', **convs["headers"][2])
         self.assertEqual(res.status_code, 200)
         # print(json.dumps(res.json()['conversation'], indent=4, ensure_ascii=False))
+        # print(res.json()['conversation'][0])
+        # input()
 
         self.client.get('/conversations/messages', {"conversationId": f"{convs['convs'][0]}"}, **convs['headers'][2])
         self.client.get('/conversations/messages', {"conversationId": f"{convs['convs'][1]}"}, **convs['headers'][4])

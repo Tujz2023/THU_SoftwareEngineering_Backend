@@ -3,7 +3,7 @@ from django.db import models
 from utils.utils_request import return_field
 
 from utils.utils_require import MAX_CHAR_LENGTH, MAX_AVATAR_LENGTH
-from utils.utils_avatar import DEFAULT_AVATAR
+from utils.utils_avatar import DEFAULT_AVATAR, CONV_AVATAR
 from utils.utils_time import time2float, float2time
 
 class User(models.Model):
@@ -49,7 +49,7 @@ class Conversation(models.Model):
     members = models.ManyToManyField(User)
     ConvName = models.CharField(max_length=MAX_CHAR_LENGTH, default="群组")
     created_time = models.FloatField(default=utils_time.get_timestamp)
-    avatar = models.CharField(max_length=MAX_AVATAR_LENGTH)
+    avatar = models.CharField(max_length=MAX_AVATAR_LENGTH, default=CONV_AVATAR)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="creator")
     managers = models.ManyToManyField(User, related_name="managers")
     
@@ -94,7 +94,8 @@ class Interface(models.Model):
 
 class Message(models.Model):
     id = models.BigAutoField(primary_key=True, unique=True)
-    content = models.TextField() # 是否加密传输
+    type = models.IntegerField(default=0) # 0：普通文字，1：图片
+    content = models.TextField() # 图片需要把content设置为图片的url
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     time = models.FloatField(default=utils_time.get_timestamp)
@@ -108,6 +109,7 @@ class Message(models.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "type": self.type,
             "content": self.content,
             "senderid": self.sender.id,
             "sendername": self.sender.name,
@@ -193,10 +195,11 @@ class Notification(models.Model):
 
     def __str__(self) -> str:
         return f"notification {self.id} from {self.sender.id} in conversation {self.conversation.id}"
-    
-# class files(models.Model):
-#     id = models.BigAutoField(primary_key=True, unique=True)
-#     type = models.BooleanField(default=False) # 0-audio/video, 1-picture
-#     file = models.FileField(upload_to='files/', default=None)
 
-#     message = models.OneToOneField(Message, on_delete=models.CASCADE, related_name="files")
+class Image(models.Model):
+    id = models.BigAutoField(primary_key=True, unique=True)
+    image = models.ImageField(upload_to='uploads/')
+    message = models.ForeignKey(Message, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Image {self.image.url} - Message {self.message.id}"

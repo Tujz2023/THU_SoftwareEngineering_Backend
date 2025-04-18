@@ -21,6 +21,7 @@ from ims.models import (
     Group,
     Interface,
     Notification,
+    Image
 )
 from utils.utils_request import (
     BAD_METHOD,
@@ -251,7 +252,7 @@ def search_users(req: HttpRequest):
             "name": user.name,
             "email": user.email,
             "avatar": user.avatar,
-            "is_friend": Conversation.objects.filter(type=0).filter(members=user_cur).filter(members=user).exists(),
+            "is_friend": False if user == user_cur else Conversation.objects.filter(type=0).filter(members=user_cur).filter(members=user).exists(),
             "deleted": user.deleted,
         }
         for user in users
@@ -418,7 +419,7 @@ def friend_request_handle(req: HttpRequest):
         new_itf2 = Interface.objects.create(conv=new_conversation, user=receiver)
         new_itf2.save()
 
-        new_message = Message(content="我已经同意你的好友请求，可以开始聊天了~~", sender=receiver, conversation=new_conversation)
+        new_message = Message(content="我已经同意你的好友请求，可以开始聊天了~~", type=0, sender=receiver, conversation=new_conversation)
         new_message.save()
         channel_layer = get_channel_layer()
         for member in new_conversation.members.all():# conv的所有member
@@ -846,8 +847,10 @@ def conversation(req: HttpRequest):
                 "notice_able": itf.notification,
                 "unread_count": itf.unreads
             }
+            if conv.type == 0:
+                new_return['friend_id'] = user.id
             convs.append(new_return)
-        sorted_convs = sorted(convs, key=lambda conv: (not conv['is_top'], -conv['last_message_time']), reverse=True)
+        sorted_convs = sorted(convs, key=lambda conv: (not conv['is_top'], -conv['last_message_time']))
         for conv in sorted_convs:
             conv['last_message_time'] = "" if last_message_time == 0 else float2time(conv['last_message_time'])
         return request_success({"conversation": sorted_convs})
@@ -877,7 +880,7 @@ def conversation(req: HttpRequest):
         cur_interface.save()
 
         channel_layer = get_channel_layer()
-        new_message = Message(content="欢迎大家，我们可以聊天了~~", sender=cur_user, conversation=new_conv)
+        new_message = Message(content="欢迎大家，我们可以聊天了~~", type=0, sender=cur_user, conversation=new_conv)
         new_message.save()
         for member in new_conv.members.all():# conv的所有member
             itf = Interface.objects.filter(conv=new_conv, user=member).first()
@@ -938,9 +941,9 @@ def message(req: HttpRequest):
             reply_to = Message.objects.filter(id=reply_to_id).first()
             if reply_to.conversation != conv:
                 return request_failed(-4, "Reply message not found", 400)
-            new_message = Message(content=content, sender=cur_user, conversation=conv, reply_to=reply_to)
+            new_message = Message(content=content, type=0, sender=cur_user, conversation=conv, reply_to=reply_to)
         else:
-            new_message = Message(content=content, sender=cur_user, conversation=conv)
+            new_message = Message(content=content, type=0, sender=cur_user, conversation=conv)
         new_message.save()
         channel_layer = get_channel_layer()
         for member in conv.members.all():# conv的所有member
@@ -961,7 +964,7 @@ def message(req: HttpRequest):
         if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
             return request_failed(1, "Not in conversation", 400)
 
-        timestring = req.GET.get('after', '0')
+        timestring = req.GET.get('from', '0')
         if timestring != '0':
             timestamp = time2float(timestring)
         else:
@@ -982,6 +985,52 @@ def message(req: HttpRequest):
                 msg.read_by.add(cur_user)
             return_message.append(ret)
         return request_success({"messages": return_message})
+
+@CheckRequire
+def image(req: HttpRequest):
+    if req.method not in ["POST"]:
+        return BAD_METHOD
+    # jwt check
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    
+    if "conversationId" in req.POST and "image" in req.FILES:
+        conv_id = req.POST['conversationId']
+        conv = Conversation.objects.filter(id=conv_id).first()
+
+        if not conv:
+            return request_failed(-1, "Conversation not found", 404)
+        if cur_user not in Conversation.objects.filter(id=conv_id).first().members.all():
+            return request_failed(1, "Not in conversation", 400)
+        
+        for member in conv.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=conv, user=member).first()
+            if not itf:
+                return request_failed(-1, "Interface not found", 404)
+
+        file = req.FILES['image']
+            
+        new_message = Message(content="", type=1, sender=cur_user, conversation=conv)
+        new_message.save()
+        image = Image(image=file, message=new_message)
+        image.save()
+        new_message.content = req.build_absolute_uri(image.image.url)
+        new_message.save()
+
+        channel_layer = get_channel_layer()
+        for member in conv.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=conv, user=member).first()
+            itf.unreads += 1
+            itf.last_message_id = new_message.id
+            itf.save()
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+
+        return request_success({"message": "成功发送"})
 
 @CheckRequire
 def get_reply(req: HttpRequest):
@@ -1406,3 +1455,26 @@ def conv_manage_notifications(req: HttpRequest):
 #         return request_success()
 #     else:
 #         return BAD_METHOD
+
+# @CheckRequire
+# def upload_image(request: HttpRequest):
+#     print(Image.objects.all())
+#     if request.method == 'POST':
+#         print("in post !!!!!")
+#         if 'image' in request.FILES:
+#             file = request.FILES['image']
+#             image = Image(image=file)
+#             image.save()
+#             print(Image.objects.all())
+#             return request_success({"message": "添加图片成功"})
+#         else:
+#             return request_failed(-1, "未成功上传图片", 404)
+#     if request.method == 'GET':
+#         print("in get !!!!")
+#         image = Image.objects.all().first()
+#         if image:
+#             image_url = request.build_absolute_uri(image.image.url)
+#             return request_success({"url": image_url})
+#         else:
+#             return request_failed(-1, "图片未找到", 404)
+#     return request_failed(-1, "方法不是POST或者GET", 404)
