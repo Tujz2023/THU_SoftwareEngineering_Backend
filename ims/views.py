@@ -796,6 +796,9 @@ def manage_friends(req: HttpRequest):
         async_to_sync(channel_layer.group_send)(
             str(friend.id),{"type": "delete_friend"}
         )
+        async_to_sync(channel_layer.group_send)(
+            str(user.id),{"type": "delete_friend"}
+        )
 
         return request_success({"message": "删除好友成功"})
 
