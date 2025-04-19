@@ -158,6 +158,7 @@ def account_info(req: HttpRequest):
             "user_info": user.user_info,
             "avatar": user.avatar,
             "deleted": user.deleted,
+            "id": user.id,
         }
         return request_success(return_data)
     elif req.method == "PUT":
