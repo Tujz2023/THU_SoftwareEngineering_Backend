@@ -176,7 +176,8 @@ GET请求：
     "email": "userEmail",
     "user_info":"user_info",
     "avatar": "userAvatar",
-    "deleted": false // 是否已被注销
+    "deleted": false, // 是否已被注销
+    "id": id
 }
 ```
 
@@ -186,6 +187,7 @@ name: 用户昵称
 - user_info: 用户信息
 - avatar: 用户头像base64码
 - deleted: 该用户是否已被注销
+- id: 该用户的id
 
 请求失败时，错误响应格式为：
 
