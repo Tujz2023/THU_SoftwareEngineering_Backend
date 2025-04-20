@@ -58,6 +58,12 @@ def require(body, key, type="string", err_msg=None, err_code=-2):
             return val
         except:
             raise KeyError(err_msg, err_code)
+        
+    elif type == "bool":
+        if val == True or val == False:
+            return val
+        else:
+            raise KeyError(err_msg, err_code)
 
     else:
         raise NotImplementedError(f"Type `{type}` not implemented.", err_code)
