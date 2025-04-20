@@ -28,7 +28,7 @@ urlpatterns = [
     # path('conversations/member/add', views.conv_member_add),
     # path('conversations/<int:conversation_id>/invitation', views.conv_invitation),
     # path('conversation/manage/handle_invitation', views.conv_handle_invitation),
-    # path('conversations/manage/notifications', views.conv_manage_notifications),
-    # path('interface/<conversation_id>', views.interface),
+    path('conversations/manage/notifications', views.conv_manage_notifications),
+    path('interface', views.interface),
     # path('upload', views.upload_image),
 ]

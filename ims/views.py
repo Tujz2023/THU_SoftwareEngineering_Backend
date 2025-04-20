@@ -1367,114 +1367,131 @@ def conv_manage_ownership(req: HttpRequest):
 #         invitation.save()
 #         return request_success({"message": "拒绝该用户入群"})
 
-# @CheckRequire
-# def conv_manage_notifications(req: HttpRequest):
-#     if req.method not in ["GET", "POST", "DELETE"]:
-#         return BAD_METHOD
-#     jwt_token = req.headers.get("Authorization")
-#     if not jwt_token:
-#         return request_failed(-2, "Invalid or expired JWT", 401)
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+@CheckRequire
+def conv_manage_notifications(req: HttpRequest):
+    if req.method not in ["GET", "POST", "DELETE"]:
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if not jwt_token:
+        return request_failed(-2, "Invalid or expired JWT", 401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
     
-#     cur_user = User.objects.filter(id=payload["id"]).first()
+    cur_user = User.objects.filter(id=payload["id"]).first()
 
-#     if req.method == "GET":
-#         conversation_id = req.GET.get("conversation_id", "")
-#         conv = Conversation.objects.filter(id=conversation_id).first()
-#         if not conv:
-#             return request_failed(-1, "Conversation not found", 404)
-#         notifications = Notification.objects.filter(conversation=conv).order_by("-time")
-#         if not notifications.exists():
-#             return_data = []
-#         else:
-#             return_data = []
-#             for notif in notifications:
-#                 return_data.append({
-#                     "notification_id": notif.id,
-#                     "content": notif.content,
-#                     "sender_name": notif.sender.name,
-#                     "timestamp": datetime.datetime.fromtimestamp(notif.time).strftime('%Y-%m-%d %H:%M:%S'),
-#                 })
-#         return request_success({"notifications": return_data})
-#     elif req.method == "POST":
-#         body = json.loads(req.body.decode("utf-8"))
-#         conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
-#         content = require(body, "content", "string", err_msg="Missing or error type of [content]")
-#         conv = Conversation.objects.filter(id=conversation_id).first()
+    if req.method == "GET":
+        conversation_id = req.GET.get("conversation_id", "")
+        conv = Conversation.objects.filter(id=conversation_id).first()
+        if not conv:
+            return request_failed(-1, "Conversation not found", 404)
+        notifications = Notification.objects.filter(conversation=conv).order_by("-time")
+        if not notifications.exists():
+            return_data = []
+        else:
+            return_data = []
+            for notif in notifications:
+                return_data.append({
+                    "notification_id": notif.id,
+                    "content": notif.content,
+                    "sender_name": notif.sender.name,
+                    "timestamp": float2time(notif.time),
+                })
+        return request_success({"notifications": return_data})
+    elif req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
+        content = require(body, "content", "string", err_msg="Missing or error type of [content]")
+        conv = Conversation.objects.filter(id=conversation_id).first()
 
-#         is_creator = conv.creator.id == cur_user.id
-#         is_admin = conv.managers.filter(id=cur_user.id).exists()
-#         if not is_creator and not is_admin:
-#             return request_failed(-3, "非群主或管理员不能发布公告", 403)
+        is_creator = (conv.creator.id == cur_user.id)
+        is_admin = conv.managers.filter(id=cur_user.id).exists()
+        if not is_creator and not is_admin:
+            return request_failed(-3, "非群主或管理员不能发布公告", 403)
         
-#         notif = Notification(sender=cur_user, conversation=conv, content=content)
-#         notif.save()
+        notif = Notification(sender=cur_user, conversation=conv, content=content)
+        notif.save()
 
-#         channel_layer = get_channel_layer()
-#         for member in conv.members.all():
-#             async_to_sync(channel_layer.group_send)(
-#                 str(member.id),
-#                 {
-#                     "type": "notification_message",
-#                 }
-#             )
-#         return request_success({"message": "发布群公告成功"})
-#     elif req.method == "DELETE":
-#         body = json.loads(req.body.decode("utf-8"))
-#         notification_id = require(body, "notification_id", "int", err_msg="Missing or error type of [notification_id]")
-#         notif = Notification.objects.filter(id=notification_id).first()
-#         if not notif:
-#             return request_failed(-1, "Notification not found", 404)
-#         is_creator = notif.conversation.creator.id == cur_user.id
-#         is_admin = notif.conversation.managers.filter(id=cur_user.id).exists()
-#         if not is_creator and not is_admin:
-#             return request_failed(-3, "非群主或管理员不能删除公告", 403)
-#         notif.delete()
-#         return request_success({"message": "删除群公告成功"})
+        channel_layer = get_channel_layer()
+        for member in conv.members.all():
+            async_to_sync(channel_layer.group_send)(
+                str(member.id),
+                {
+                    "type": "notification_message",
+                }
+            )
+        return request_success({"message": "发布群公告成功"})
+    elif req.method == "DELETE":
+        body = json.loads(req.body.decode("utf-8"))
+        notification_id = require(body, "notification_id", "int", err_msg="Missing or error type of [notification_id]")
+        notif = Notification.objects.filter(id=notification_id).first()
+        if not notif:
+            return request_failed(-1, "Notification not found", 404)
+        is_creator = (notif.conversation.creator.id == cur_user.id)
+        is_admin = notif.conversation.managers.filter(id=cur_user.id).exists()
+        if not is_creator and not is_admin:
+            return request_failed(-3, "非群主或管理员不能删除公告", 403)
+        notif.delete()
 
-# @CheckRequire
-# def interface(req: HttpRequest):
-#     jwt_token = req.headers.get("Authorization")
-#     if jwt_token == None or jwt_token == "":
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     cur_user = User.objects.filter(id=payload["id"]).first()
+        conv = Conversation.objects.filter(id=notif.conversation.id).first()
+        channel_layer = get_channel_layer()
+        for member in conv.members.all():
+            async_to_sync(channel_layer.group_send)(
+                str(member.id),
+                {
+                    "type": "notification_message",
+                }
+            )
+        return request_success({"message": "删除群公告成功"})
 
-#     conversation_id = req.GET.get("conversation_id", "")
-#     conver = Conversation.objects.filter(id=conversation_id).first()
-#     if not conver:
-#         return request_failed(-1, "会话不存在", 404)
-#     itf = Interface.objects.filter(conv=conver, user=cur_user).first()
-#     if not itf:
-#         return request_failed(-3, "权限异常", 403)
-#     if req.method == "GET":
-#         return_data = {
-#             "unreads": itf.unreads,
-#             "notification": itf.notification,
-#             "ontop": itf.ontop
-#         }
-#         return request_success(return_data)
-#     elif req.method == "POST":
-#         body = json.loads(req.body.decode("utf-8"))
-#         conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
-#         # conditional
-#         if 'ontop' in body.keys():
-#             ontop = require(body, "ontop", "bool", err_msg="Missing or error type of [ontop]")
-#             itf.ontop = ontop
-#         if 'notification' in body.keys():
-#             notification = require(body, "notification", "bool", err_msg="Missing or error type of [notification]")
-#             itf.notification = notification
-#         if 'unreads' in body.keys():
-#             unreads = require(body, "unreads", "int", err_msg="Missing or error type of [unreads]")
-#             itf.unreads = unreads
-#         itf.save()
-#         return request_success()
-#     else:
-#         return BAD_METHOD
+@CheckRequire
+def interface(req: HttpRequest):
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+
+    if req.method == "GET":
+        conversation_id = req.GET.get("conversationId", "")
+        conver = Conversation.objects.filter(id=conversation_id).first()
+        if not conver:
+            return request_failed(-1, "会话不存在", 404)
+        itf = Interface.objects.filter(conv=conver, user=cur_user).first()
+        if not itf:
+            return request_failed(-1, "权限异常", 404)
+        return_data = {
+            "unreads": itf.unreads,
+            "notification": itf.notification,
+            "ontop": itf.ontop
+        }
+        return request_success(return_data)
+    elif req.method == "POST":
+        body = json.loads(req.body.decode("utf-8"))
+        conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversation_id]")
+        # conditional
+        conver = Conversation.objects.filter(id=conversation_id).first()
+        if not conver:
+            return request_failed(-1, "会话不存在", 404)
+        itf = Interface.objects.filter(conv=conver, user=cur_user).first()
+        if not itf:
+            return request_failed(-1, "权限异常", 404)
+        if 'ontop' in body.keys():
+            ontop = require(body, "ontop", "bool", err_msg="Missing or error type of [ontop]")
+            itf.ontop = ontop
+        if 'notification' in body.keys():
+            notification = require(body, "notification", "bool", err_msg="Missing or error type of [notification]")
+            itf.notification = notification
+        if 'unreads' in body.keys():
+            unreads = require(body, "unreads", "bool", err_msg="Missing or error type of [unreads]")
+            if unreads == True:
+                itf.unreads = 1
+        itf.save()
+        return request_success()
+    else:
+        return BAD_METHOD
 
 # @CheckRequire
 # def upload_image(request: HttpRequest):

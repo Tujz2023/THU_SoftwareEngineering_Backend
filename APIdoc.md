@@ -1458,8 +1458,7 @@ GET请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
-- 若会话权限异常，状态码403，错误码-3，错误信息"权限异常"。
+- 若会话不存在，状态码404，错误码-1，错误信息"权限异常"。
 
 ##### 置顶会话、消息免打扰、未读信息数设置 /interface
 
@@ -1470,14 +1469,14 @@ POST请求：
     "conversationId": "conversationId",
     "ontop": true,
     "notification": false,
-    "unreads": "unread_number"
+    "unreads": true
 }
 ```
 
 - conversationId: 置顶会话的会话ID
 - ontop: 是否置顶，默认保持
 - notification: 是否消息免打扰，默认保持
-- unreads: 未读消息数，默认为保持
+- unreads: 是否标记为未读，标记为未读之后默认未读数量为1
 
 响应：
 请求成功时，设置状态码为200OK，返回置顶会话成功的消息，成功响应格式为:
@@ -1499,8 +1498,7 @@ POST请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
-- 若会话权限异常，状态码403，错误码-3，错误信息"权限异常"。
+- 若会话权限异常，状态码404，错误码-1，错误信息"权限异常"。
 
 #### 聊天记录管理 /conversations/manage_messages
 
@@ -1736,7 +1734,7 @@ GET请求：
 ```
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
-
+- 若无公告，正常返回，状态码200，返回空列表。
 
 POST请求：
 
