@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 from ims.email import verification_email
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.utils import timezone
 
 import random
 import datetime
@@ -1515,3 +1516,73 @@ def interface(req: HttpRequest):
 #         else:
 #             return request_failed(-1, "图片未找到", 404)
 #     return request_failed(-1, "方法不是POST或者GET", 404)
+
+@CheckRequire
+def read_list(req: HttpRequest): #已读列表
+    if req.method != "POST":
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    body = json.loads(req.body.decode("utf-8"))
+    message_id = require(body, "message_id", "int", err_msg="Missing or error type of [message_id]")
+    message = Message.objects.filter(id=message_id).first()
+    if not message:
+        return request_failed(-1, "消息不存在", 404)
+    if message.conversation.members.filter(id=cur_user.id).first() == None:
+        return request_failed(-3, "权限异常", 400)
+    users = {_user_.id for _user_ in message.read_by}
+    return request_success({"read_users": users})
+
+@CheckRequire
+def sift_messages(req: HttpRequest): #筛选消息
+    if req.method != "GET":
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    conversation_id = req.GET.get("conversationId", "")
+    if conversation_id == "":
+        return request_failed(-1, "Missing or error type of [conversation_id]", 400)
+    conversation_id = int(conversation_id)
+    conv = Conversation.objects.filter(id=conversation_id).first()
+    if not conv:
+        return request_failed(-1, "会话不存在", 404)
+    if conv.members.filter(id=cur_user.id).first() == None:
+        return request_failed(-3, "权限异常", 400)
+    # 以下默认空字符串表示不筛选
+    start_time = req.GET.get("start_time", "")
+    end_time = req.GET.get("end_time", "")
+    sender_id = req.GET.get("sender_id", "")
+    sender_name = req.GET.get("sender_name", "")
+    content = req.GET.get("content", "")
+    if start_time != "":
+        start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+    else:
+        start_time = timezone.now()
+    if end_time != "":
+        end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+    else:
+        end_time = timezone.now()
+    queryset = Message.objects.filter(conversation=conv)
+    if start_time:
+        queryset = queryset.filter(time__gte=start_time)
+    if end_time:
+        queryset = queryset.filter(time__lte=end_time)
+    if sender_id:
+        queryset = queryset.filter(sender__id=sender_id)
+    if sender_name:
+        queryset = queryset.filter(sender__name=sender_name)
+    if content:
+        queryset = queryset.filter(content__contains=content)
+    # 返回查询结果
+    messages_serialize = [_message_.serialize() for _message_ in queryset]
+    return request_success({"messages": messages_serialize})
