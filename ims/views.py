@@ -908,7 +908,7 @@ def message(req: HttpRequest):
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     cur_user = User.objects.filter(id=payload["id"]).first()
     
-    if req.method == "DELETE":
+    if req.method == "DELETE":# 这个是彻底删除所有聊天记录
         body = json.loads(req.body.decode("utf-8"))
         msgid = require(body, "message_id", "int", err_msg="Missing or error type of [message_id]")
         if not Message.objects.filter(id=msgid).exists():
@@ -992,6 +992,29 @@ def message(req: HttpRequest):
         return request_success({"messages": return_message})
 
 @CheckRequire
+def delete_messages(req: HttpRequest):
+    if req.method != "DELETE":
+        return BAD_METHOD
+    # jwt check
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    
+    body = json.loads(req.body.decode("utf-8"))
+    message_ids = require(body, "message_ids", "list", err_msg="Missing or error type of [message_list]")
+    for msg_id in message_ids:
+        if not Message.objects.filter(id=msg_id).exists():
+            return request_failed(-1, "Message not found", 404)
+        msg = Message.objects.filter(id=msg_id).first()
+        msg.invisible_to.add(cur_user)
+    
+    return request_success({"message": "删除聊天记录成功"})
+
+@CheckRequire
 def image(req: HttpRequest):
     if req.method not in ["POST"]:
         return BAD_METHOD
@@ -1070,6 +1093,47 @@ def get_reply(req: HttpRequest):
     return request_success({"replies": return_message})
 
 @CheckRequire
+def get_members(req: HttpRequest):
+    if req.method != "GET":
+        return BAD_METHOD
+    
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    
+    conv_id = int(req.GET.get("conversation_id", ""))
+    if not Conversation.objects.filter(id=conv_id).exists():
+        return request_failed(-1, "Conversation not found", 404)
+
+    conv = Conversation.objects.filter(id=conv_id).first()
+    return_members = []
+    if conv.type == 0:
+        # 私聊情况只返回对方的用户信息
+        member = conv.members.exclude(id=payload["id"]).first()
+        return_members.append({
+            "id": member.id,
+            "email": member.email,
+            "name": member.name,
+            "avatar": member.avatar,
+        })
+    else:
+        # 群聊情况返回所有成员的用户信息
+        for member in conv.members.all():
+            return_members.append({
+                "id": member.id,
+                "email": member.email,
+                "name": member.name,
+                "avatar": member.avatar,
+            })
+    return request_success({"members": return_members})
+
+
+
+
+@CheckRequire
 def conv_manage_admin(req: HttpRequest):
     if req.method not in ["POST", "DELETE"]:
         return BAD_METHOD
@@ -1126,7 +1190,6 @@ def conv_manage_info(req: HttpRequest):
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
     cur_user = User.objects.filter(id=payload["id"]).first()
     body = json.loads(req.body.decode("utf-8"))
-
     conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
     conv = Conversation.objects.filter(id=conversation_id).first()
     if not conv:

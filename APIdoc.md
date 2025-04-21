@@ -1651,7 +1651,96 @@ DELETE请求：
 - 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。
 - 若不是消息发送者或不是群组管理员、群主，则无权限，状态码403，错误码-3，错误信息"No permission to delete message"。
 
+##### 删除聊天记录 /conversations/delete_messages
+该API用于删除聊天记录。
+DELETE请求：
+
+```json
+{
+    "message_ids": [id1, id2, id3, ...]
+}
+```
+
+- message_ids: 要删除的消息ID列表
+
+响应：
+请求成功时，设置状态码为200OK，返回删除聊天记录成功的消息，成功响应格式为:
+
+```json
+{
+    "code": 0,
+    "info": "Succeed",
+    "message": "删除聊天记录成功"
+}
+```
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若消息不存在，状态码404，错误码-1，错误信息"Message not found"。
+
 ### 群聊管理
+
+#### 获取群聊的用户列表 /conversations/get_members
+
+该API用于获取群聊的用户列表。
+
+GET请求：
+
+```json
+{
+    "conversation_id": conversation_id,
+}
+```
+- conversation_id: 获取群聊用户列表的会话ID
+
+响应：  
+请求成功时，设置状态码为200OK，返回群聊的用户列表，成功响应格式为:
+
+```json
+{
+    "code": 0,
+    "info": "success",
+    "members": [
+        {
+            "id": user_id,
+            "email": "user_email",
+            "name": "userName",
+            "avatar": "AvatarUrl",
+        },  
+        {
+            "id": user_id,
+            "email": "user_email",
+            "name": "userName",
+            "avatar": "AvatarUrl",
+        }
+    ]
+}
+```
+
+- members: 群聊的用户列表，包含用户ID、邮箱、昵称、头像、是否已删除等信息。
+- id: 用户ID
+- email: 用户邮箱
+- name: 用户昵称
+- avatar: 用户头像URL
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
 
 #### 设置/解除群组管理员 /conversations/manage/admin
 
