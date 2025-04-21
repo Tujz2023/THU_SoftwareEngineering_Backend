@@ -1,6 +1,10 @@
 import json
 from utils.utils_jwt import check_jwt_token
 from channels.generic.websocket import AsyncWebsocketConsumer
+import logging
+
+logger = logging.getLogger("ims_consumer")
+logger.setLevel(logging.INFO)
 
 class IMSConsumer(AsyncWebsocketConsumer):
     # 当客户端尝试建立 WebSocket 连接时调用
@@ -26,9 +30,11 @@ class IMSConsumer(AsyncWebsocketConsumer):
 
     # 向指定用户组发送 notification
     async def notify(self, event) -> None:
+        logger.info(f"发送[notify]消息")
         await self.send(text_data=json.dumps({'type': 'notify'}))
 
     async def request_message(self, event):# 好友请求
+        logger.info(f"发送[request_message]消息")
         await self.send(
             text_data=json.dumps(
                 {
@@ -38,6 +44,7 @@ class IMSConsumer(AsyncWebsocketConsumer):
         )
     
     async def delete_friend(self, event):# 好友删除
+        logger.info(f"发送[delete_friend]消息")
         await self.send(
             text_data=json.dumps(
                 {
