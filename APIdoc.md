@@ -1320,6 +1320,7 @@ POST请求(只用于发送图片，并且图片信息不可以用来回复其他
 需要使用authorization头部携带JWT令牌。
 
 使用formdata把图片传过来，具体地：
+
 ```json
 {
     "conversationId": "conversationId",
@@ -1355,7 +1356,7 @@ POST请求(只用于发送图片，并且图片信息不可以用来回复其他
 
 #### 查看回复列表 /conversations/get_reply
 
-该API用于查看回复列表。  
+该API用于查看回复列表。
 
 GET请求：
 
@@ -1414,6 +1415,44 @@ GET请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若消息不存在，状态码404，错误码-1，错误信息"Message not found"。
+
+#### 已读列表 /conversations/readlist
+
+该API用于查看已读列表。
+
+POST请求：
+
+```json
+{
+    "message_id": message_id,
+}
+```
+
+- message_id: 查看回复列表的消息ID
+
+响应：
+请求成功时，设置状态码为200OK，返回回复列表，成功响应格式为:
+
+```json
+{
+    "read_users": {1,2,3,...,999}
+}
+```
+
+- 每个int数字为已读用户id
+
+请求失败时，错误相应的格式为：
+
+```json
+{  
+    "code": *,  
+    "info": "[error message]"
+}
+```
+
+- 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若用户不在消息所在群组中，状态码400，错误码-3，错误信息"权限异常"。
+- 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。
 
 #### 会话管理 /interface
 
@@ -1504,7 +1543,7 @@ POST请求：
 
 该API用于管理特定会话的聊天记录，包括筛选聊天记录，删除聊天记录
 
-##### 筛选聊天记录
+##### 筛选聊天记录 /conversations/sift
 
 GET请求：
 
@@ -1532,7 +1571,7 @@ GET请求：
 ```json
 {
     "code": 0,
-    "info": "success",
+    "info": "Succeed",
     "messages": [
         {
             "id": "messageId",
@@ -1724,7 +1763,7 @@ GET请求：
 }
 ```
 
-请求失败时，错误相应的格式为：  
+请求失败时，错误相应的格式为：
 
 ```json
 {  
@@ -1732,6 +1771,7 @@ GET请求：
     "info": "[error message]"
 }
 ```
+
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若conversation不存在，状态码404，错误码-1，错误信息"Conversation not found"。
 - 若无公告，正常返回，状态码200，返回空列表。
@@ -1804,7 +1844,6 @@ DELETE请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若要删除的公告不存在，状态码404，错误码-1，错误信息"Notification not found"。
 - 若要删除的公告不是群主或管理员，状态码403，错误码-3，错误信息"非群主或管理员不能删除公告"。
-
 
 #### 群主转让/conversations/manage/ownership_transfer
 
