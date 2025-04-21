@@ -32,7 +32,7 @@ urlpatterns = [
     # path('conversation/manage/handle_invitation', views.conv_handle_invitation),
     path('conversations/manage/notifications', views.conv_manage_notifications),
     path('interface', views.interface),
-    path('conversations/readlist', views.read_list),
-    path('conversations/sift', views.sift_messages),
+    # path('conversations/readlist', views.read_list),
+    # path('conversations/sift', views.sift_messages),
     # path('upload', views.upload_image),
 ]

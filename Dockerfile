@@ -5,6 +5,8 @@ ENV DEPLOY=1
 
 WORKDIR /app
 
+# RUN apt-get update && apt-get install -y redis-server
+
 COPY . /app
 
 RUN pip install --upgrade setuptools
