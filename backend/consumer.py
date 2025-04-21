@@ -6,6 +6,13 @@ import logging
 logger = logging.getLogger("ims_consumer")
 logger.setLevel(logging.INFO)
 
+if not logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
 class IMSConsumer(AsyncWebsocketConsumer):
     # 当客户端尝试建立 WebSocket 连接时调用
     async def connect(self) -> None:
