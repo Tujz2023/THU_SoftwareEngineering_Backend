@@ -13,18 +13,6 @@ import random
 import datetime
 import string
 
-import logging
-
-logger = logging.getLogger("ims_views")
-logger.setLevel(logging.INFO)
-
-if not logger.handlers:
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
 from ims.models import (
     Conversation,
     User,
@@ -339,8 +327,6 @@ def add_friend(req: HttpRequest):
     async_to_sync(channel_layer.group_send)(
         str(target_id),{"type": "request_message"}
     )
-
-    logger.info('申请成功')
 
     return request_success({"message": "申请成功"})
 

@@ -3,15 +3,15 @@ from utils.utils_jwt import check_jwt_token
 from channels.generic.websocket import AsyncWebsocketConsumer
 import logging
 
-# logger = logging.getLogger("ims_consumer")
-# logger.setLevel(logging.INFO)
+logger = logging.getLogger("ims_consumer")
+logger.setLevel(logging.INFO)
 
-# if not logger.handlers:
-#     console_handler = logging.StreamHandler()
-#     console_handler.setLevel(logging.INFO)
-#     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-#     console_handler.setFormatter(formatter)
-#     logger.addHandler(console_handler)
+if not logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
 class IMSConsumer(AsyncWebsocketConsumer):
     # 当客户端尝试建立 WebSocket 连接时调用
@@ -28,20 +28,22 @@ class IMSConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.userid, self.channel_name)
 
         # 接受 WebSocket 连接
+        logger.info(f"成功连接")
         await self.accept()
 
     # 当 WebSocket 连接关闭时调用
     async def disconnect(self, close_code: int) -> None:
         # 将当前 WebSocket 从其所在的组中移除
+        logger.info(f"连接关闭")
         await self.channel_layer.group_discard(self.userid, self.channel_name)
 
     # 向指定用户组发送 notification
     async def notify(self, event) -> None:
-        # logger.info(f"发送[notify]消息")
+        logger.info(f"发送[notify]消息")
         await self.send(text_data=json.dumps({'type': 'notify'}))
 
     async def request_message(self, event):# 好友请求
-        # logger.info(f"发送[request_message]消息")
+        logger.info(f"发送[request_message]消息")
         await self.send(
             text_data=json.dumps(
                 {
@@ -51,7 +53,7 @@ class IMSConsumer(AsyncWebsocketConsumer):
         )
     
     async def delete_friend(self, event):# 好友删除
-        # logger.info(f"发送[delete_friend]消息")
+        logger.info(f"发送[delete_friend]消息")
         await self.send(
             text_data=json.dumps(
                 {
