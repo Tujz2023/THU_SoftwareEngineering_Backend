@@ -1382,7 +1382,7 @@ GET请求：
             "sender_name": "sender_name",
             "sender_avatar": "AvatarUrl",
             "content": "replyContent",
-            "timestamp": "2025-03-13T14:30:00Z"
+            "time": "2025-03-13T14:30:00Z"
         },
         {
             "reply_id": reply_id,
@@ -1390,7 +1390,7 @@ GET请求：
             "sender_name": "sender_name",
             "sender_avatar": "AvatarUrl",
             "content": "replyContent",
-            "timestamp": "2025-03-13T14:30:00Z"
+            "time": "2025-03-13T14:30:00Z"
         }
     ]
 }

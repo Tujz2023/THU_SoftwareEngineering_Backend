@@ -113,8 +113,8 @@ class Message(models.Model):
             "content": self.content,
             "senderid": self.sender.id,
             "sendername": self.sender.name,
-            "senderavatar": self.sender.avatar,
-            # "senderavatar": "true" if self.sender.avatar else "false",
+            # "senderavatar": self.sender.avatar,
+            "senderavatar": "true" if self.sender.avatar else "false",
             "conversation": self.conversation.id,
             "created_time": float2time(self.time)
         }
