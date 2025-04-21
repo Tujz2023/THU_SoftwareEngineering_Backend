@@ -28,14 +28,14 @@ class IMSConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.userid, self.channel_name)
 
         # 接受 WebSocket 连接
-        logger.info(f"成功连接")
         await self.accept()
+        logger.info(f"成功连接")
 
     # 当 WebSocket 连接关闭时调用
     async def disconnect(self, close_code: int) -> None:
         # 将当前 WebSocket 从其所在的组中移除
-        logger.info(f"连接关闭")
         await self.channel_layer.group_discard(self.userid, self.channel_name)
+        logger.info(f"连接关闭")
 
     # 向指定用户组发送 notification
     async def notify(self, event) -> None:

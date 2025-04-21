@@ -37,7 +37,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    'uvicorn',
+    'daphne',
     'ims',
     'corsheaders',
     'django.contrib.admin',
@@ -159,9 +159,18 @@ EMAIL_USE_TLS = True  # 是否使用 TLS 加密
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'instant_message@163.com'  # 默认发件人地址
 
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+#     },
+# }
+
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
     },
 }
 
