@@ -1123,12 +1123,15 @@ def get_members(req: HttpRequest):
     payload = check_jwt_token(jwt_token)
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
     
     conv_id = int(req.GET.get("conversation_id", ""))
     if not Conversation.objects.filter(id=conv_id).exists():
         return request_failed(-1, "Conversation not found", 404)
 
     conv = Conversation.objects.filter(id=conv_id).first()
+    if not conv.members.filter(id=cur_user.id).exists():
+        return request_failed(-1, "Conversation not found", 404)
     return_members = []
     if conv.type == 0:
         # 私聊情况只返回对方的用户信息
@@ -1271,48 +1274,70 @@ def conv_manage_ownership(req: HttpRequest):
         async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
     return request_success({"message":"群主转让成功"})
 
-# @CheckRequire
-# def conv_member_remove(req: HttpRequest):
-#     if req.method not in ["POST", "DELETE"]:
-#         return BAD_METHOD
-#     jwt_token = req.headers.get("Authorization")
-#     if jwt_token == None or jwt_token == "":
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     cur_user = User.objects.filter(id=payload["id"]).first()
-#     conversation_id = req.GET.get("conversation_id", "")
-#     conv = Conversation.objects.filter(id=conversation_id).first()
-#     if not conv:
-#         return request_failed(-1, "Conversation not found", 404)
-#     if req.method == "POST":
-#         if cur_user not in conv.members.all():
-#             return request_failed(-1, "你不在群组中，无法退出", 400)
-#         if cur_user == conv.creator:
-#             conv.delete()
-#             return request_success({"message":"群组解散成功"})
-#         conv.members.remove(cur_user)
-#         if cur_user in conv.managers.all():
-#             conv.managers.remove(cur_user)
-#         conv.save()
-#         return request_success({"message":"退出群组成功"})
-#     elif req.method == "DELETE":
-#         if conv.creator != cur_user and cur_user not in conv.managers.all():
-#             return request_failed(-3, "非群主或管理员不能移除群成员", 403)
-#         set_user_id = req.GET.get("user", "")
-#         set_user = User.objects.filter(id=set_user_id).first()
-#         if not set_user:
-#             return request_failed(-1, "User not found", 404)
-#         if set_user not in conv.members.all():
-#             return request_failed(1, "User not in conversation", 400)
-#         if set_user in conv.managers.all() and cur_user != conv.creator:
-#             return request_failed(-3, "非群主不能移除管理员", 403)
-#         conv.members.remove(set_user)
-#         if set_user in conv.managers.all():
-#             conv.managers.remove(set_user)
-#         conv.save()
-#         return request_success({"message":"移除群成员成功"})
+@CheckRequire
+def conv_member_remove(req: HttpRequest):
+    if req.method not in ["POST", "DELETE"]:
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+
+    body = json.loads(req.body.decode("utf-8"))
+    conversation_id = require(body, "conversation_id", "int", err_msg="Missing or error type of [conversation_id]")
+    conv = Conversation.objects.filter(id=conversation_id).first()
+
+    if not conv:
+        return request_failed(-1, "Conversation not found", 404)
+    if req.method == "POST":
+        if cur_user not in conv.members.all():
+            return request_failed(-1, "你不在群组中，无法退出", 400)
+        if cur_user == conv.creator:
+            conv.delete()
+            return request_success({"message":"群组解散成功"})
+        conv.members.remove(cur_user)
+        if cur_user in conv.managers.all():
+            conv.managers.remove(cur_user)
+        conv.save()
+
+        itf = Interface.objects.filter(conv=conv, user=cur_user).first()
+        itf.delete()
+        for msg in Message.objects.filter(conversation=conv).all():
+            if cur_user in msg.invisible_to.all():
+                msg.invisible_to.remove(cur_user)
+            if cur_user in msg.read_by.all():
+                msg.read_by.remove(cur_user)
+            msg.save()
+
+        return request_success({"message":"退出群组成功"})
+    elif req.method == "DELETE":
+        if conv.creator != cur_user and cur_user not in conv.managers.all():
+            return request_failed(-3, "非群主或管理员不能移除群成员", 403)
+        set_user_id = require(body, "user", "int", err_msg="Missing or error type of [conversation_id]")
+        set_user = User.objects.filter(id=set_user_id).first()
+        if not set_user:
+            return request_failed(-1, "User not found", 404)
+        if set_user not in conv.members.all():
+            return request_failed(1, "User not in conversation", 400)
+        if set_user in conv.managers.all() and cur_user != conv.creator:
+            return request_failed(-3, "非群主不能移除管理员", 403)
+        conv.members.remove(set_user)
+        if set_user in conv.managers.all():
+            conv.managers.remove(set_user)
+        conv.save()
+
+        itf = Interface.objects.filter(conv=conv, user=set_user).first()
+        itf.delete()
+        for msg in Message.objects.filter(conversation=conv).all():
+            if set_user in msg.invisible_to.all():
+                msg.invisible_to.remove(set_user)
+            if set_user in msg.read_by.all():
+                msg.read_by.remove(set_user)
+            msg.save()
+        return request_success({"message":"移除群成员成功"})
     
 # @CheckRequire
 # def conv_member_add(req: HttpRequest):
@@ -1604,26 +1629,33 @@ def interface(req: HttpRequest):
 #             return request_failed(-1, "图片未找到", 404)
 #     return request_failed(-1, "方法不是POST或者GET", 404)
 
-# @CheckRequire
-# def read_list(req: HttpRequest): #已读列表
-#     if req.method != "POST":
-#         return BAD_METHOD
-#     jwt_token = req.headers.get("Authorization")
-#     if jwt_token == None or jwt_token == "":
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     cur_user = User.objects.filter(id=payload["id"]).first()
-#     body = json.loads(req.body.decode("utf-8"))
-#     message_id = require(body, "message_id", "int", err_msg="Missing or error type of [message_id]")
-#     message = Message.objects.filter(id=message_id).first()
-#     if not message:
-#         return request_failed(-1, "消息不存在", 404)
-#     if message.conversation.members.filter(id=cur_user.id).first() == None:
-#         return request_failed(-3, "权限异常", 400)
-#     users = {_user_.id for _user_ in message.read_by}
-#     return request_success({"read_users": users})
+@CheckRequire
+def read_list(req: HttpRequest): #已读列表
+    if req.method != "POST":
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+    body = json.loads(req.body.decode("utf-8"))
+    message_id = require(body, "message_id", "int", err_msg="Missing or error type of [message_id]")
+    message = Message.objects.filter(id=message_id).first()
+    if not message:
+        return request_failed(-1, "消息不存在", 404)
+    if message.conversation.members.filter(id=cur_user.id).first() == None:
+        return request_failed(-3, "权限异常", 400)
+    users = [
+        {
+            "avatar": user.avatar,
+            # "avatar": True if user.avatar else False,
+            "name": user.name
+        }
+        for user in message.read_by.all()
+    ]
+    return request_success({"read_users": users})
 
 # @CheckRequire
 # def sift_messages(req: HttpRequest): #筛选消息

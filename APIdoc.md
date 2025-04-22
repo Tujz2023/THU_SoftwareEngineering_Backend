@@ -1435,11 +1435,23 @@ POST请求：
 
 ```json
 {
-    "read_users": {1,2,3,...,999}
+    "code": 0,
+    "info": "success",
+    "read_users": [
+        {
+            "avatar": "avatar",
+            "name": "username"
+        },
+        {
+            "avatar": "avatar",
+            "name": "username"
+        }
+    ]
 }
 ```
 
-- 每个int数字为已读用户id
+- avatar: 用户的头像
+- name: 用户的昵称
 
 请求失败时，错误相应的格式为：
 
@@ -1453,6 +1465,7 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若用户不在消息所在群组中，状态码400，错误码-3，错误信息"权限异常"。
 - 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。
+- 若没有已读成员，正常返回，状态码200，返回空列表
 
 #### 会话管理 /interface
 
@@ -1741,7 +1754,7 @@ GET请求：
 }
 ```
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若会话不存在或者用户不在群中，状态码404，错误码-1，错误信息"Conversation not found"。
 
 #### 设置/解除群组管理员 /conversations/manage/admin
 
@@ -2012,7 +2025,7 @@ conversation_id: 所在会话ID
 }
 ```
 
-- 若要自身不在群聊中，状态码400，错误码1，"你不在群组中，无法退出"
+- 若要自身不在群聊中，状态码400，错误码-1，"你不在群组中，无法退出"
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 
 DELETE请求：
