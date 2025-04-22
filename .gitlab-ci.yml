@@ -17,7 +17,7 @@ build:
     - deployer build
   # TODO End: [Student] Set as only main
   only:
-    - dev
+    - master
 
 unit-test:
   # TODO Start: [Student] Set job image
@@ -52,4 +52,4 @@ deploy:
     - deployer dyno replace $CI_PROJECT_NAME "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
   # TODO End: [Student] Set as only main
   only:
-    - dev
+    - master
