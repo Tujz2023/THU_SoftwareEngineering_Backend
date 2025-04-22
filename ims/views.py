@@ -841,8 +841,8 @@ def conversation(req: HttpRequest):
             new_return = {
                 "id": conv.id,
                 "name": name,
-                "avatar": True if avatar else False,
-                # "avatar": avatar,
+                # "avatar": True if avatar else False,
+                "avatar": avatar,
                 "last_message": last_content,
                 "last_message_time": last_message_time,
                 "is_chat_group": True if conv.type == 1 else False,
@@ -1145,8 +1145,8 @@ def get_members(req: HttpRequest):
             return_members.append({
                 "id": member.id,
                 "name": member.name,
-                "avatar": True if member.avatar else False,
-                # "avatar": member.avatar,
+                # "avatar": True if member.avatar else False,
+                "avatar": member.avatar,
                 "identity": temp_identity
             })
         return_members = sorted(return_members, key=lambda x: x['identity'])
