@@ -1624,15 +1624,16 @@ def interface(req: HttpRequest):
 #     # 以下默认空字符串表示不筛选
 #     start_time = req.GET.get("start_time", "")
 #     end_time = req.GET.get("end_time", "")
+#     # 时间戳是float，转换为datetime
 #     sender_id = req.GET.get("sender_id", "")
 #     sender_name = req.GET.get("sender_name", "")
 #     content = req.GET.get("content", "")
 #     if start_time != "":
-#         start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        # start_time = float2time(start_time)
 #     else:
 #         start_time = timezone.now()
 #     if end_time != "":
-#         end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+#         end_time = float2time(end_time)
 #     else:
 #         end_time = timezone.now()
 #     queryset = Message.objects.filter(conversation=conv)
