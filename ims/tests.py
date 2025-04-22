@@ -1652,7 +1652,7 @@ class ImsTests(TestCase):
 
         res = self.client.get('/conversations', **headers)
         
-        res = self.client.delete('/conversations/delete_messages', data={"message_ids": [6, msg1.id, msg2.id, msg3.id, msg4.id, msg5.id]}, **headers, content_type='application/json')
+        res = self.client.delete('/conversations/delete_messages', data={"message_ids": [msg1.id, msg2.id, msg3.id, msg4.id, msg5.id]}, **headers, content_type='application/json')
         self.assertEqual(res.status_code, 200)
 
         res = self.client.get('/conversations', **headers)
