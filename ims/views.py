@@ -1133,25 +1133,29 @@ def get_members(req: HttpRequest):
     if conv.type == 0:
         # 私聊情况只返回对方的用户信息
         member = conv.members.exclude(id=payload["id"]).first()
-        return_members.append({
-            "id": member.id,
-            "email": member.email,
-            "name": member.name,
-            "avatar": member.avatar,
-        })
+        return request_success({"members": [{"id": member.id, "name": member.name, "avatar": member.avatar}]})
     else:
         # 群聊情况返回所有成员的用户信息
         for member in conv.members.all():
+            temp_identity = 3
+            if conv.creator == member:
+                temp_identity = 1
+            elif conv.managers.filter(id=member.id).exists():
+                temp_identity = 2
             return_members.append({
                 "id": member.id,
-                "email": member.email,
                 "name": member.name,
-                "avatar": member.avatar,
+                "avatar": True if member.avatar else False,
+                # "avatar": member.avatar,
+                "identity": temp_identity
             })
-    return request_success({"members": return_members})
-
-
-
+        return_members = sorted(return_members, key=lambda x: x['identity'])
+        identity = 3
+        if conv.creator.id == payload["id"]:
+            identity = 1
+        elif conv.managers.filter(id=payload["id"]).exists():
+            identity = 2
+        return request_success({"identity": identity, "members": return_members})
 
 @CheckRequire
 def conv_manage_admin(req: HttpRequest):

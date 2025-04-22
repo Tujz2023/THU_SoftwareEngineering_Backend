@@ -1659,4 +1659,24 @@ class ImsTests(TestCase):
         res = self.client.get('/conversations', **conv[2][0])
 
     def test_get_members(self):
-        a = 1
+        conv = self.add_managers_for_test()
+        headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+
+        private = Conversation.objects.filter(type=0).filter(members=self.holder).first()
+        conver = conv[1]
+        res = self.client.get('/conversations/get_members', {"conversation_id": private.id}, **headers)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))
+        another = private.members.exclude(id=self.holder_id).first()
+        # another：temp_user1
+        headers1 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": another.email, "password": another.password})}
+        res = self.client.get('/conversations/get_members', {"conversation_id": private.id}, **headers1)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))
+
+        res = self.client.get('/conversations/get_members', {"conversation_id": conver.id}, **headers)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))
+        res = self.client.get('/conversations/get_members', {"conversation_id": conver.id}, **conv[2][3])
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))

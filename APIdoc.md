@@ -1708,28 +1708,29 @@ GET请求：
 {
     "code": 0,
     "info": "success",
+    "identity": 3,      //自己在群里的身份(identity只在群聊的时候开放该字段，私聊的时候不会开放)
     "members": [
         {
             "id": user_id,
-            "email": "user_email",
             "name": "userName",
-            "avatar": "AvatarUrl",
+            "avatar": "avatar",
+            "identity": 1       // 1为群主，2为管理员，3为普通成员
         },  
         {
             "id": user_id,
-            "email": "user_email",
             "name": "userName",
-            "avatar": "AvatarUrl",
+            "avatar": "avatar",
+            "identity": 2
         }
     ]
 }
 ```
 
-- members: 群聊的用户列表，包含用户ID、邮箱、昵称、头像、是否已删除等信息。
+- members: 群聊的用户列表，包含用户ID、昵称、头像、群里的身份。
 - id: 用户ID
-- email: 用户邮箱
 - name: 用户昵称
-- avatar: 用户头像URL
+- avatar: 用户头像
+- identity: 用户在群内的身份(identity只在群聊的时候开放该字段，私聊的时候不会开放)
 
 请求失败时，错误相应的格式为：
 
