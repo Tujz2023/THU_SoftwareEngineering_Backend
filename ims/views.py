@@ -824,8 +824,6 @@ def conversation(req: HttpRequest):
         convs = []
         for itf in itfs:
             conv = itf.conv
-            # print(itf.last_message_id, cur_user.id, conv.id)
-            # input()
             if Message.objects.filter(id=itf.last_message_id).exists():
                 last_message = Message.objects.filter(id=itf.last_message_id).first()
                 last_content = last_message.content
@@ -843,8 +841,8 @@ def conversation(req: HttpRequest):
             new_return = {
                 "id": conv.id,
                 "name": name,
-                # "avatar": True if avatar else False,
-                "avatar": avatar,
+                "avatar": True if avatar else False,
+                # "avatar": avatar,
                 "last_message": last_content,
                 "last_message_time": last_message_time,
                 "is_chat_group": True if conv.type == 1 else False,
@@ -1006,11 +1004,33 @@ def delete_messages(req: HttpRequest):
     
     body = json.loads(req.body.decode("utf-8"))
     message_ids = require(body, "message_ids", "list", err_msg="Missing or error type of [message_list]")
+    last_time = 0
+    last_id = -1
     for msg_id in message_ids:
         if not Message.objects.filter(id=msg_id).exists():
             return request_failed(-1, "Message not found", 404)
         msg = Message.objects.filter(id=msg_id).first()
         msg.invisible_to.add(cur_user)
+        if msg.time > last_time:
+            last_time = msg.time
+            last_id = msg.id
+    
+    first_msg = Message.objects.filter(id=message_ids[0]).first()
+    conv = first_msg.conversation
+    itf = Interface.objects.filter(conv=conv, user=cur_user).first()
+    if last_id == itf.last_message_id: 
+        last_message = Message.objects.filter(conversation=conv).exclude(invisible_to=cur_user)
+        if not last_message.exists():
+            itf.last_message_id = -1
+        else:
+            itf.last_message_id = last_message.order_by('-time').first().id
+            # print("last_id: ", last_id, "itf_last_id: ", itf.last_message_id)
+            # input()
+        itf.save()
+
+    channel_layer = get_channel_layer()
+    for member in conv.members.all():
+        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
     
     return request_success({"message": "删除聊天记录成功"})
 
@@ -1113,25 +1133,29 @@ def get_members(req: HttpRequest):
     if conv.type == 0:
         # 私聊情况只返回对方的用户信息
         member = conv.members.exclude(id=payload["id"]).first()
-        return_members.append({
-            "id": member.id,
-            "email": member.email,
-            "name": member.name,
-            "avatar": member.avatar,
-        })
+        return request_success({"members": [{"id": member.id, "name": member.name, "avatar": member.avatar}]})
     else:
         # 群聊情况返回所有成员的用户信息
         for member in conv.members.all():
+            temp_identity = 3
+            if conv.creator == member:
+                temp_identity = 1
+            elif conv.managers.filter(id=member.id).exists():
+                temp_identity = 2
             return_members.append({
                 "id": member.id,
-                "email": member.email,
                 "name": member.name,
-                "avatar": member.avatar,
+                "avatar": True if member.avatar else False,
+                # "avatar": member.avatar,
+                "identity": temp_identity
             })
-    return request_success({"members": return_members})
-
-
-
+        return_members = sorted(return_members, key=lambda x: x['identity'])
+        identity = 3
+        if conv.creator.id == payload["id"]:
+            identity = 1
+        elif conv.managers.filter(id=payload["id"]).exists():
+            identity = 2
+        return request_success({"identity": identity, "members": return_members})
 
 @CheckRequire
 def conv_manage_admin(req: HttpRequest):

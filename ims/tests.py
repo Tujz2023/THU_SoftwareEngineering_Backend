@@ -1179,37 +1179,6 @@ class ImsTests(TestCase):
         self.assertEqual(res.status_code, 200)
         # print(res.json()['messages'])
 
-    # def test_messages_delete(self):
-    #     temp_user = User.objects.create(email="temp_email@email.com", name='temp_user', password=encrypt_text('123456'))
-    #     newConv = Conversation(type=0)
-    #     newConv.save()
-    #     newConv.members.add(self.holder, temp_user)
-
-    #     headers1 = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
-    #     headers2 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": temp_user.email, "password": temp_user.password})}
-    #     self.client.post('/conversations/messages', data={"conversationId": f"{newConv.id}", "content": "number1 from holder"}, **headers1, content_type='application/json')
-    #     self.client.post('/conversations/messages', data={"conversationId": f"{newConv.id}", "content": "number2 from holder"}, **headers1, content_type='application/json')
-    #     self.client.post('/conversations/messages', data={"conversationId": f"{newConv.id}", "content": "number3 from user"}, **headers2, content_type='application/json')
-    #     self.client.post('/conversations/messages', data={"conversationId": f"{newConv.id}", "content": "number4 from holder"}, **headers1, content_type='application/json')
-    #     self.client.post('/conversations/messages', data={"conversationId": f"{newConv.id}", "content": "number5 from user"}, **headers2, content_type='application/json')
-    #     self.client.post('/conversations/messages', data={"conversationId": f"{newConv.id}", "content": "number6 from holder"}, **headers1, content_type='application/json')
-        
-    #     res = self.client.get('/conversations/messages', {"conversationId": f"{newConv.id}"}, **headers1)
-    #     print(res.json()['messages'])
-
-    #     res = self.client.delete('/conversations/messages', data={"message_id": 1}, **headers1, content_type='application/json')
-    #     self.assertEqual(res.status_code, 200)
-    #     res = self.client.delete('/conversations/messages', data={"message_id": 7}, **headers1, content_type='application/json')
-    #     self.assertEqual(res.status_code, 404)
-    #     self.assertEqual(res.json()['code'], -1)
-    #     res = self.client.delete('/conversations/messages', data={"message_id": 3}, **headers1, content_type='application/json')
-    #     self.assertEqual(res.status_code, 200)
-
-    #     res = self.client.get('/conversations/messages', {"conversationId": f'{newConv.id}'}, **headers1)
-    #     print(res.json()['messages'])
-    #     res = self.client.get('/conversations/messages', {"conversationId": f'{newConv.id}'}, **headers2)
-    #     print(res.json()['messages'])
-
     # * Tests for conversations portion
     def create_conversations_for_test(self):
         # *1*, 3, 4为一组；2，*3*，5为一组
@@ -1646,3 +1615,68 @@ class ImsTests(TestCase):
         res = self.client.get('/conversations/manage/notifications', {"conversation_id": conv[1].id}, **conv[2][3])
         self.assertEqual(res.status_code, 200)
         # print(res.json()['notifications'])
+    
+    def test_messages_delete(self):
+        conv = self.add_managers_for_test()
+        headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number1 from holder"}, **headers, content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number2 from holder"}, **headers, content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number3 from user"}, **conv[2][0], content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number4 from holder"}, **headers, content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number5 from user"}, **conv[2][0], content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number6 from holder"}, **headers, content_type='application/json')
+        
+        res = self.client.get('/conversations/messages', {"conversationId": f"{conv[1].id}"}, **conv[2][0])
+
+        msg1 = Message.objects.filter(content='number1 from holder').first()
+        msg2 = Message.objects.filter(content='number2 from holder').first()
+        msg3 = Message.objects.filter(content='number3 from user').first()
+        msg4 = Message.objects.filter(content='number4 from holder').first()
+        msg5 = Message.objects.filter(content='number5 from user').first()
+        msg6 = Message.objects.filter(content='number6 from holder').first()
+
+        res = self.client.delete('/conversations/delete_messages', data={"message_ids": [msg1.id]}, **conv[2][0], content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        res = self.client.delete('/conversations/delete_messages', data={"message_ids": [msg6.id + 1]}, **conv[2][0], content_type='application/json')
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.json()['code'], -1)
+        res = self.client.delete('/conversations/delete_messages', data={"message_ids": [msg2.id, msg4.id]}, **conv[2][0], content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get('/conversations/messages', {"conversationId": f'{conv[1].id}'}, **conv[2][0])
+        res = self.client.get('/conversations/messages', {"conversationId": f'{conv[1].id}'}, **headers)
+
+        res = self.client.delete('/conversations/delete_messages', data={"message_ids": [msg6.id]}, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get('/conversations', **headers)
+        
+        res = self.client.delete('/conversations/delete_messages', data={"message_ids": [msg1.id, msg2.id, msg3.id, msg4.id, msg5.id]}, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+
+        res = self.client.get('/conversations', **headers)
+        res = self.client.get('/conversations', **conv[2][0])
+
+    def test_get_members(self):
+        conv = self.add_managers_for_test()
+        headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+
+        private = Conversation.objects.filter(type=0).filter(members=self.holder).first()
+        conver = conv[1]
+        res = self.client.get('/conversations/get_members', {"conversation_id": private.id}, **headers)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))
+        another = private.members.exclude(id=self.holder_id).first()
+        # another：temp_user1
+        headers1 = {"HTTP_AUTHORIZATION": self.login_for_test({"email": another.email, "password": another.password})}
+        res = self.client.get('/conversations/get_members', {"conversation_id": private.id}, **headers1)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))
+
+        res = self.client.get('/conversations/get_members', {"conversation_id": conver.id}, **headers)
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))
+        res = self.client.get('/conversations/get_members', {"conversation_id": conver.id}, **conv[2][3])
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json(), indent=4, ensure_ascii=False))
