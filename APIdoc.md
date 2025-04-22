@@ -1238,7 +1238,8 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
             "sendername": "name",
             "senderavatar": "avatar",
             "conversation": conversationId,
-            "created_time": "2025-03-13T14:30:20Z"
+            "created_time": "2025-03-13T14:30:20Z",
+            "already_read": True
         },
         ...
     ]
@@ -1255,6 +1256,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
 - reply_to_id: 回复消息的id
 - conversation: 群聊id
 - created_time: 消息发送时间
+- already_read: 对于私聊，该字段用于显示对方是否已读
 
 请求失败时，错误相应的格式为：
 
@@ -1418,7 +1420,7 @@ GET请求：
 
 #### 已读列表 /conversations/readlist
 
-该API用于查看已读列表。
+该API用于查看群聊(type=1)已读列表。
 
 POST请求：
 
@@ -1558,15 +1560,14 @@ POST请求：
 
 ##### 筛选聊天记录 /conversations/sift
 
-GET请求：
+POST请求：
 
 ```json
 {
     "conversationId": "conversationId",
     "start_time": "2025-03-13T14:30:00Z",
     "end_time": "2025-03-13T14:30:00Z",
-    "sender_id": "senderId",
-    "sender_name": "senderName",
+    "sender_id": senderId,
     "content": "messageContent" 
 }
 ```
@@ -1575,7 +1576,6 @@ GET请求：
 - start_time: 筛选开始时间
 - end_time: 筛选结束时间
 - sender_id: 发送者ID
-- sender_name: 发送者昵称
 - content: 消息内容
 
 响应：
@@ -1587,16 +1587,18 @@ GET请求：
     "info": "Succeed",
     "messages": [
         {
-            "id": "messageId",
-            "sender_id": "senderId",
+            "id": messageId,
+            "type": 0,
+            "sender_id": senderId,
             "sender_name": "senderName",
             "sender_avatar": "AvatarUrl",
             "content": "messageContent",
             "timestamp": "2025-03-13T14:30:00Z"
         },
         {
-            "id": "messageId",
-            "sender_id": "senderId",
+            "id": messageId,
+            "type": 1,
+            "sender_id": senderId,
             "sender_name": "senderName",
             "sender_avatar": "AvatarUrl",
             "content": "messageContent",
@@ -1608,6 +1610,7 @@ GET请求：
 
 - messages: 筛选后的聊天记录列表，包含消息ID、发送者ID、发送者昵称、发送者头像、消息内容、消息时间等。
 - id: 消息ID
+- type: 消息的类型，0为普通文字，1为图片
 - sender_id: 发送者ID
 - sender_name: 发送者昵称
 - sender_avatar: 发送者头像URL

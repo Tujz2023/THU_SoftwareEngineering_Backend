@@ -986,6 +986,11 @@ def message(req: HttpRequest):
                 ret['reply_to_id'] = msg.reply_to.id
             if (msg.sender != cur_user) and (not msg.read_by.filter(id=cur_user.id).exists()):
                 msg.read_by.add(cur_user)
+            if conv.type == 0:
+                if msg.read_by.exclude(id=cur_user.id).exists():
+                    ret['already_read'] = True
+                else:
+                    ret['already_read'] = False
             return_message.append(ret)
         return request_success({"messages": return_message})
 
@@ -1029,8 +1034,7 @@ def delete_messages(req: HttpRequest):
         itf.save()
 
     channel_layer = get_channel_layer()
-    for member in conv.members.all():
-        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+    async_to_sync(channel_layer.group_send)(str(cur_user.id), {'type': 'notify'})
     
     return request_success({"message": "删除聊天记录成功"})
 
@@ -1316,7 +1320,7 @@ def conv_member_remove(req: HttpRequest):
     elif req.method == "DELETE":
         if conv.creator != cur_user and cur_user not in conv.managers.all():
             return request_failed(-3, "非群主或管理员不能移除群成员", 403)
-        set_user_id = require(body, "user", "int", err_msg="Missing or error type of [conversation_id]")
+        set_user_id = require(body, "user", "int", err_msg="Missing or error type of [user]")
         set_user = User.objects.filter(id=set_user_id).first()
         if not set_user:
             return request_failed(-1, "User not found", 404)
@@ -1657,52 +1661,54 @@ def read_list(req: HttpRequest): #已读列表
     ]
     return request_success({"read_users": users})
 
-# @CheckRequire
-# def sift_messages(req: HttpRequest): #筛选消息
-#     if req.method != "GET":
-#         return BAD_METHOD
-#     jwt_token = req.headers.get("Authorization")
-#     if jwt_token == None or jwt_token == "":
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     payload = check_jwt_token(jwt_token)
-#     if payload is None:
-#         return request_failed(-2, "Invalid or expired JWT", status_code=401)
-#     cur_user = User.objects.filter(id=payload["id"]).first()
-#     conversation_id = req.GET.get("conversationId", "")
-#     if conversation_id == "":
-#         return request_failed(-1, "Missing or error type of [conversation_id]", 400)
-#     conversation_id = int(conversation_id)
-#     conv = Conversation.objects.filter(id=conversation_id).first()
-#     if not conv:
-#         return request_failed(-1, "会话不存在", 404)
-#     if conv.members.filter(id=cur_user.id).first() == None:
-#         return request_failed(-3, "权限异常", 400)
-#     # 以下默认空字符串表示不筛选
-#     start_time = req.GET.get("start_time", "")
-#     end_time = req.GET.get("end_time", "")
-#     # 时间戳是float，转换为datetime
-#     sender_id = req.GET.get("sender_id", "")
-#     sender_name = req.GET.get("sender_name", "")
-#     content = req.GET.get("content", "")
-#     if start_time != "":
-        # start_time = float2time(start_time)
-#     else:
-#         start_time = timezone.now()
-#     if end_time != "":
-#         end_time = float2time(end_time)
-#     else:
-#         end_time = timezone.now()
-#     queryset = Message.objects.filter(conversation=conv)
-#     if start_time:
-#         queryset = queryset.filter(time__gte=start_time)
-#     if end_time:
-#         queryset = queryset.filter(time__lte=end_time)
-#     if sender_id:
-#         queryset = queryset.filter(sender__id=sender_id)
-#     if sender_name:
-#         queryset = queryset.filter(sender__name=sender_name)
-#     if content:
-#         queryset = queryset.filter(content__contains=content)
-#     # 返回查询结果
-#     messages_serialize = [_message_.serialize() for _message_ in queryset]
-#     return request_success({"messages": messages_serialize})
+@CheckRequire
+def sift_messages(req: HttpRequest): #筛选消息
+    if req.method != "POST":
+        return BAD_METHOD
+    jwt_token = req.headers.get("Authorization")
+    if jwt_token == None or jwt_token == "":
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    payload = check_jwt_token(jwt_token)
+    if payload is None:
+        return request_failed(-2, "Invalid or expired JWT", status_code=401)
+    cur_user = User.objects.filter(id=payload["id"]).first()
+
+    body = json.loads(req.body.decode("utf-8"))
+
+    conversation_id = require(body, "conversationId", "int", err_msg="Missing or error type of [conversationId]")
+    conv = Conversation.objects.filter(id=conversation_id).first()
+    if not conv:
+        return request_failed(-1, "会话不存在", 404)
+    if conv.members.filter(id=cur_user.id).first() == None:
+        return request_failed(-3, "权限异常", 400)
+    
+    queryset = Message.objects.filter(conversation=conv).exclude(invisible_to=cur_user)
+    if "start_time" in body:
+        start_time = require(body, "start_time", "string", err_msg="Missing or error type of [start_time]")
+        start_time = time2float(start_time)
+        queryset = queryset.filter(time__gte=start_time)
+    if "end_time" in body:
+        end_time = require(body, "end_time", "string", err_msg="Missing or error type of [end_time]")
+        end_time = time2float(end_time)
+        queryset = queryset.filter(time__lte=end_time)
+    if "sender_id" in body:
+        sender_id = require(body, "sender_id", "int", err_msg="Missing or error type of [sender_id]")
+        queryset = queryset.filter(sender__id=sender_id)
+    if "content" in body:
+        content = require(body, "content", "string", err_msg="Missing or error type of [content]")
+        queryset = queryset.filter(content__contains=content)    
+
+    messages_serialize = [
+        {
+            "id": _message_.id,
+            "type": _message_.type,
+            "sender_id": _message_.sender.id,
+            "sender_name": _message_.sender.name,
+            "sender_avatar": _message_.sender.avatar,
+            # "sender_avatar": True if _message_.sender.avatar else False,
+            "content": _message_.content,
+            "timestamp": float2time(_message_.time)
+        }
+        for _message_ in queryset
+    ]
+    return request_success({"messages": messages_serialize})

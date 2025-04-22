@@ -9,7 +9,7 @@ urlpatterns = [
     path('search_user', views.search_users),
     path('verify', views.send_verification_email),
     path('add_friend', views.add_friend),
-    path('friend_requests', views.get_friend_requests),# todo：加websocket
+    path('friend_requests', views.get_friend_requests),
     path('friend_request_handle', views.friend_request_handle),
     path('groups', views.groups),
     path('groups/manage_groups', views.manage_groups),
@@ -33,6 +33,6 @@ urlpatterns = [
     path('conversations/manage/notifications', views.conv_manage_notifications),
     path('interface', views.interface),
     path('conversations/readlist', views.read_list),
-    # path('conversations/sift', views.sift_messages),
+    path('conversations/sift', views.sift_messages),
     # path('upload', views.upload_image),
 ]

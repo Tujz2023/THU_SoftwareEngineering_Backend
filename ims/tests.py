@@ -1766,3 +1766,57 @@ class ImsTests(TestCase):
         self.assertEqual(res.status_code, 200)
         # print(json.dumps(res.json()['read_users'], indent=4, ensure_ascii=False))
         # input()
+
+        conver = Conversation.objects.filter(members=self.holder).filter(members=conv[0][0]).first()
+        res = self.client.get('/conversations/messages', {"conversationId": conver.id}, **headers)
+        # print(json.dumps(res.json()['messages'], indent=4, ensure_ascii=False))
+        # input()
+        res = self.client.get('/conversations/messages', {"conversationId": conver.id}, **conv[2][0])
+        # print(json.dumps(res.json()['messages'], indent=4, ensure_ascii=False))
+    
+    def test_sift(self):
+        conv = self.add_managers_for_test()
+        headers = {"HTTP_AUTHORIZATION": self.login_for_test(self.holder_login)}
+
+        conver = conv[1]
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number1 from holder"}, **headers, content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number2 from holder"}, **headers, content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number3 from user"}, **conv[2][0], content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number4 from holder"}, **headers, content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number5 from user"}, **conv[2][0], content_type='application/json')
+        self.client.post('/conversations/messages', data={"conversationId": f"{conv[1].id}", "content": "number6 from holder"}, **headers, content_type='application/json')
+
+        data = {
+            "conversationId": conver.id,
+            "sender_id": self.holder_id,
+        }
+        res = self.client.post('/conversations/sift', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json()['messages'], indent=4, ensure_ascii=False))
+        # input()
+
+        data = {
+            "conversationId": conver.id,
+            "content": "holder"
+        }
+        res = self.client.post('/conversations/sift', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json()['messages'], indent=4, ensure_ascii=False))
+        # input()
+        
+        data = {
+            "conversationId": conver.id,
+            "start_time": "2023-12-10 10:43:23"
+        }
+        res = self.client.post('/conversations/sift', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json()['messages'], indent=4, ensure_ascii=False))
+        # input()
+
+        data = {
+            "conversationId": conver.id,
+            "end_time": "2023-12-10 10:43:23"
+        }
+        res = self.client.post('/conversations/sift', data=data, **headers, content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        # print(json.dumps(res.json()['messages'], indent=4, ensure_ascii=False))
