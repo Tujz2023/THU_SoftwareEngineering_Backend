@@ -1469,7 +1469,7 @@ POST请求：
 - 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。
 - 若没有已读成员，正常返回，状态码200，返回空列表
 
-#### 会话管理 /interface
+#### 会话管理
 
 该API用于管理特定的会话，包括查看会话详情，聊天记录，置顶会话，免打扰会话
 
@@ -1554,7 +1554,7 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话权限异常，状态码404，错误码-1，错误信息"权限异常"。
 
-#### 聊天记录管理 /conversations/manage_messages
+#### 聊天记录管理
 
 该API用于管理特定会话的聊天记录，包括筛选聊天记录，删除聊天记录
 
@@ -1629,7 +1629,7 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若会话不存在，状态码404，错误码-1，错误信息"会话不存在"。
 
-##### 彻底删除聊天记录 /conversations/messages
+<!-- ##### 彻底删除聊天记录 /conversations/messages
 
 注意：此操作从数据库中彻底删除某条聊天记录，对会话中所有用户有效。
 
@@ -1665,7 +1665,7 @@ DELETE请求：
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若消息不存在，状态码404，错误码-1，错误信息"消息不存在"。
-- 若不是消息发送者或不是群组管理员、群主，则无权限，状态码403，错误码-3，错误信息"No permission to delete message"。
+- 若不是消息发送者或不是群组管理员、群主，则无权限，状态码403，错误码-3，错误信息"No permission to delete message"。 -->
 
 ##### 删除聊天记录 /conversations/delete_messages
 该API用于删除聊天记录。
@@ -2087,7 +2087,6 @@ POST请求：
 
 - conversationId: 群组邀请的会话ID
 - member_id: 群组邀请的成员ID列表
-- timestamp: 群组邀请时间
 
 响应：
 请求成功时，设置状态码为200OK，返回群组邀请成功的消息，成功响应格式为:
@@ -2112,14 +2111,19 @@ POST请求：
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
 - 若邀请的成员已经是群组成员，状态码403，错误码-3，错误信息"The member is already in the conversation"。
 - 若邀请的成员不是自己的好友，状态码403，错误码-4，错误信息"The user is not your friend"。
+- 若已经存在发送者和接收者，并且邀请状态为未处理，状态码403，错误码-5，错误信息"正在等待管理员确认，请不要重复发送"。
 
-#### 获取群组邀请/conversations/<conversation_id>/invitation
+#### 获取群组邀请/conversations/invitation
 
 该API用于获取群组邀请列表。
 
 GET请求：
 
-无请求体
+```json
+{
+    "conversation_id": conversation_id,
+}
+```
 
 响应：
 请求成功时，设置状态码为200OK，返回群组邀请列表，成功响应格式为:
@@ -2128,14 +2132,16 @@ GET请求：
 {
     "code": 0,
     "info": "success",
-    "invitation": [
+    "invitations": [
         {
             "invite_id": inviteId,
             "conversation_id": conversationId,
             "sender_id": senderId,
             "sender_name": "senderName",
+            "sender_avatar": "avatar1",
             "receiver_id": receiverId,
             "receiver_name": "receiverName",
+            "receiver_avatar": "avatar2",
             "timestamp": "2025-03-13T14:30:00Z",
             "status": 0
         },
@@ -2144,8 +2150,10 @@ GET请求：
             "conversation_id": conversationId,
             "sender_id": senderId,
             "sender_name": "senderName",
+            "sender_avatar": "avatar1",
             "receiver_id": receiverId,
             "receiver_name": "receiverName",
+            "receiver_avatar": "avatar2",
             "timestamp": "2025-03-13T14:30:00Z",
             "status": 1
         }
@@ -2157,10 +2165,14 @@ GET请求：
 - invite_id: 邀请ID
 - sender_id: 发起者ID
 - sender_name: 发起者昵称
+- sender_avatar: 发起者头像
 - receiver_id: 接收者ID
 - receiver_name: 接收者昵称
+- receiver_avatar: 接收者头像
 - timestamp: 邀请时间
-  请求失败时，错误相应的格式为：
+- status: 该邀请的状态(0为未处理，1为已拒绝，2为已同意，3为该成员已经在群中)
+
+请求失败时，错误相应的格式为：
 
 ```json
 {  
@@ -2170,25 +2182,23 @@ GET请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
-- 若会话不存在，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若会话不存在或者用户不在会话中，状态码404，错误码-1，错误信息"Conversation not found"。
+- 若邀请不存在，正常返回，状态码200，invitations为空列表。
 
 #### 处理入群邀请/conversations/manage/handle_invitation
 
 该API用于同意进群邀请或者拒绝该邀请
 
+POST请求：
+
 ```json
 {
-    "conversation_id": conversationId,
     "invite_id": inviteId,
-    "status": 0
 }
 ```
 
-- conversation_id: 处理群组邀请的会话ID
 - invite_id: 发出邀请的成员ID
-- status: 处理群组邀请的状态，0表示同意，1表示拒绝，2表示成功
 
-POST请求：
 响应：
 请求成功时，设置状态码为200OK，返回处理群组邀请成功的消息，成功响应格式为:
 
@@ -2201,6 +2211,13 @@ POST请求：
 ```
 
 DELETE请求：
+
+```json
+{
+    "invite_id": inviteId,
+}
+```
+
 响应：
 请求成功时，设置状态码为200OK，返回处理群组邀请成功的消息，成功响应格式为:
 
@@ -2222,8 +2239,10 @@ DELETE请求：
 ```
 
 - 若JWT令牌错误或过期，状态码401，错误码-2，错误信息"Invalid or expired JWT"。
+- 若该邀请不存在，状态码403，错误码-5，错误信息"Invitation not found"。
 - 若非群主或管理员处理群组邀请，状态码403，错误码-3，错误信息"非群主或管理员不能处理邀请"。
-- 若status不为0，则表示已经有人处理过该邀请，状态码403，错误码-4，错误信息"邀请已处理"。
+- 若该成员已在群里，状态码403，错误码-6，错误信息"User already in conversation"。
+- 若该请求的status不为0，表示已经有人处理过该邀请，状态码403，错误码-4，错误信息"邀请已处理"。
 
 #### 更新群信息/conversations/manage/info
 
