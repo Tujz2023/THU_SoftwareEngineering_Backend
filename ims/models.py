@@ -144,7 +144,7 @@ class Invitation(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="invitation_receiver")
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
     time = models.FloatField(default=utils_time.get_timestamp)
-    status = models.IntegerField(default=0) # 0-waiting, 1-rejected, 2-accepted
+    status = models.IntegerField(default=0) # 0-waiting, 1-rejected, 2-accepted, 3-already in
 
     class Meta:
         indexes = [models.Index(fields=["id"])]
