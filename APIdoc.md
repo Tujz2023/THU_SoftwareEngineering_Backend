@@ -1105,6 +1105,7 @@ GET请求：
             "name":"conversationName",
             "avatar":"AvatarUrl",
             "last_message":"lastMessage",
+            "last_message_type": 0,
             "last_message_time":"lastMessageTime",
             "is_chat_group":true,
             "is_top":true,
@@ -1116,6 +1117,7 @@ GET请求：
             "name":"conversationName",
             "avatar":"AvatarUrl",
             "last_message":"lastMessage",
+            "last_message_type": 0,
             "last_message_time":"lastMessageTime",
             "is_chat_group":false,
             "friend_id":friendid,
@@ -1133,6 +1135,7 @@ GET请求：
 - name: 会话名称
 - avatar: 参与人头像URL
 - last_message: 最后一条消息内容
+- last_message_type: 最后一条消息的类型
 - last_message_time: 最后一条消息时间
 - is_chat_group: 是否为群聊
 - friendid: 若是私聊，则返回好友的id(群聊时无这个字段)
