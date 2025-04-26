@@ -828,9 +828,11 @@ def conversation(req: HttpRequest):
                 last_message = Message.objects.filter(id=itf.last_message_id).first()
                 last_content = last_message.content
                 last_message_time = last_message.time
+                last_message_type = last_message.type
             else:
                 last_content = ""
                 last_message_time = 0
+                last_message_type = 0
             if conv.type == 1:
                 name = conv.ConvName
                 avatar = conv.avatar
@@ -844,6 +846,7 @@ def conversation(req: HttpRequest):
                 # "avatar": True if avatar else False,
                 "avatar": avatar,
                 "last_message": last_content,
+                "last_message_type": last_message_type,
                 "last_message_time": last_message_time,
                 "is_chat_group": True if conv.type == 1 else False,
                 "is_top": itf.ontop,
