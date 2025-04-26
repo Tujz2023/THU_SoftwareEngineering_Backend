@@ -1225,6 +1225,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
             "senderid": senderId,
             "sendername": "name",
             "senderavatar": "avatar",
+            "reply_to_type": 0,
             "reply_to": "reply content",
             "reply_to_id": replyId,
             "conversation": conversationId,
@@ -1252,6 +1253,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
 - senderid: 消息发送者的id
 - sendername: 消息发送者的昵称
 - senderavatar: 消息发送者的头像
+- reply_to_type: 回复消息的类型，0为普通消息，1为图片
 - reply_to: 回复消息的内容
 - reply_to_id: 回复消息的id
 - conversation: 群聊id
@@ -1380,6 +1382,7 @@ GET请求：
     "replies": [
         {
             "reply_id": reply_id,
+            "reply_type": 0,
             "sender_id": sender_id,
             "sender_name": "sender_name",
             "sender_avatar": "AvatarUrl",
@@ -1388,6 +1391,7 @@ GET请求：
         },
         {
             "reply_id": reply_id,
+            "reply_type": 1,
             "sender_id": sender_id,
             "sender_name": "sender_name",
             "sender_avatar": "AvatarUrl",
@@ -1400,6 +1404,7 @@ GET请求：
 
 - replies: 回复列表，包含回复ID、发送者ID、发送者昵称、发送者头像、回复内容、回复时间等。
 - reply_id: 回复ID
+- reply_type: 回复的消息的类型，0为普通消息，1为图片
 - sender_id: 发送者ID
 - sender_name: 发送者昵称
 - sender_avatar: 发送者头像URL
