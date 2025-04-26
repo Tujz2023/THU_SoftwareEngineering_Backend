@@ -984,6 +984,7 @@ def message(req: HttpRequest):
             if (msg.reply_to != None) and (not msg.reply_to.invisible_to.filter(id=cur_user.id).exists()):
                 ret['reply_to'] = msg.reply_to.content
                 ret['reply_to_id'] = msg.reply_to.id
+                ret['reply_to_type'] = msg.reply_to.type
             if (msg.sender != cur_user) and (not msg.read_by.filter(id=cur_user.id).exists()):
                 msg.read_by.add(cur_user)
             if conv.type == 0:
@@ -1107,6 +1108,7 @@ def get_reply(req: HttpRequest):
     for msg in replies:
         return_message.append({
             "reply_id": msg.id,
+            "reply_type": msg.type,
             "sender_id": msg.sender.id,
             "sender_name": msg.sender.name,
             # "sender_avatar": True if msg.sender.avatar else False,
