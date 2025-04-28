@@ -1397,8 +1397,7 @@ def conv_member_add(req: HttpRequest):
         invitation.save()
         conv.members.add(invitation.receiver)
         conv.save()
-        last_msg = Message.objects.filter(conversation=conv).order_by('-time').first().id
-        itf = Interface(conv=conv, user=invitation.receiver, last_message_id=last_msg, unreads=1)
+        itf = Interface(conv=conv, user=invitation.receiver)
         itf.save()
 
         invs = Invitation.objects.filter(receiver=invitation.receiver).exclude(id=invitation.id).all()
@@ -1406,14 +1405,16 @@ def conv_member_add(req: HttpRequest):
             inv.status = 3
             inv.save()
 
-        # 向被邀请进群的用户发送通知
+        member = invitation.receiver
+        new_message = Message(content=f"欢迎新成员~~\n\n{member.name}成功加入了我们，让我们一起欢迎他 ^o^", type=0, sender=cur_user, conversation=conv)
+        new_message.save()
         channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            str(invitation.receiver.id),
-            {
-                "type": "notify"
-            }
-        )
+        for member in conv.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=conv, user=member).first()
+            itf.unreads += 1
+            itf.last_message_id = new_message.id
+            itf.save()
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
         
         return request_success({"message": "邀请成功"})
     else:
@@ -1515,8 +1516,7 @@ def conv_handle_invitation(req: HttpRequest):
         invitation.save()
         conv.members.add(invitation.receiver)
         conv.save()
-        last_msg = Message.objects.filter(conversation=conv).order_by('-time').first().id
-        itf = Interface(conv=conv, user=invitation.receiver, last_message_id=last_msg, unreads=1)
+        itf = Interface(conv=conv, user=invitation.receiver)
         itf.save()
 
         member = invitation.receiver
