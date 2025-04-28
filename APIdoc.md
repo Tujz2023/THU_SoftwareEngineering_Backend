@@ -1057,6 +1057,7 @@ GET请求：
         "name": "name",
         "email": "example@email.com",
         "avatar": "avatar",
+        "is_deleted": False,
         "is_friend": False
     }
 }
@@ -1065,6 +1066,7 @@ GET请求：
 - name: 该用户的昵称
 - email: 该用户的邮箱
 - avatar: 该用户的头像
+- is_deleted: 该用户是否注销
 - is_friend: 该用户是否为自己的好友
 
 请求失败时，错误相应的格式为：
