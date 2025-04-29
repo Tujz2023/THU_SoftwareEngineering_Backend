@@ -657,14 +657,9 @@ def get_friends_list(req: HttpRequest):
         return request_success({"friends": friends_list})
 
     # 从对话中获取好友列表中好友的email列表
-    friends_emails = (
-        User.objects.filter(conversation__members__email=user_email)
-        .exclude(email=user_email)
-        .values_list('email', flat=True)
-        .distinct()
-    )
-
-    friends = User.objects.filter(email__in=friends_emails)
+    conv = Conversation.objects.filter(type=0).filter(members__email=user_email)
+    
+    friends = User.objects.filter(conversation__in=conv).exclude(id=payload["id"]).distinct()
 
     friends_list = [
         {
