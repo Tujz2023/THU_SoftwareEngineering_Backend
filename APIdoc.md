@@ -382,7 +382,7 @@ PUT请求：
             "user_name": "UserName",
             "avatar": "AvatarUrl",
             "message": "申请消息",
-            "created_at": "2025-03-13T14:30:00Z", // 申请时间
+            "created_at": "2025-03-13 14:30:00", // 申请时间
             "status": 0 // 0: 等待处理，1: 已同意，2: 已拒绝，3：已成为好友
         },
         {
@@ -392,7 +392,7 @@ PUT请求：
             "user_name": "UserName",
             "avatar": "AvatarUrl",
             "message": "申请消息",
-            "created_at": "2025-03-13T14:30:00Z", // 申请时间
+            "created_at": "2025-03-13 14:30:00", // 申请时间
             "status": 1 // 0: 等待处理，1: 已同意，2: 已拒绝，3：已成为好友
         }
     ]
@@ -1208,7 +1208,7 @@ GET请求：
 ```json
 {
     "conversationId": "conversationId",
-    "from": "2025-03-13T14:30:00Z"
+    "from": "2025-03-13 14:30:00"
 }
 ```
 
@@ -1234,7 +1234,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
             "reply_to": "reply content",
             "reply_to_id": replyId,
             "conversation": conversationId,
-            "created_time": "2025-03-13T14:30:00Z"
+            "created_time": "2025-03-13 14:30:00"
         },
         {
             "id": id,
@@ -1244,7 +1244,7 @@ from的格式为"%Y-%m-%d %H:%M:%S"，例如"2023-04-01 12:30:45"
             "sendername": "name",
             "senderavatar": "avatar",
             "conversation": conversationId,
-            "created_time": "2025-03-13T14:30:20Z",
+            "created_time": "2025-03-13 14:30:20",
             "already_read": True
         },
         ...
@@ -1392,7 +1392,7 @@ GET请求：
             "sender_name": "sender_name",
             "sender_avatar": "AvatarUrl",
             "content": "replyContent",
-            "time": "2025-03-13T14:30:00Z"
+            "time": "2025-03-13 14:30:00"
         },
         {
             "reply_id": reply_id,
@@ -1401,7 +1401,7 @@ GET请求：
             "sender_name": "sender_name",
             "sender_avatar": "AvatarUrl",
             "content": "replyContent",
-            "time": "2025-03-13T14:30:00Z"
+            "time": "2025-03-13 14:30:00"
         }
     ]
 }
@@ -1575,8 +1575,8 @@ POST请求：
 ```json
 {
     "conversationId": "conversationId",
-    "start_time": "2025-03-13T14:30:00Z",
-    "end_time": "2025-03-13T14:30:00Z",
+    "start_time": "2025-03-13 14:30:00",
+    "end_time": "2025-03-13 14:30:00",
     "sender_id": senderId,
     "content": "messageContent" 
 }
@@ -1603,7 +1603,7 @@ POST请求：
             "sender_name": "senderName",
             "sender_avatar": "AvatarUrl",
             "content": "messageContent",
-            "timestamp": "2025-03-13T14:30:00Z"
+            "timestamp": "2025-03-13 14:30:00"
         },
         {
             "id": messageId,
@@ -1612,7 +1612,7 @@ POST请求：
             "sender_name": "senderName",
             "sender_avatar": "AvatarUrl",
             "content": "messageContent",
-            "timestamp": "2025-03-13T14:30:00Z"
+            "timestamp": "2025-03-13 14:30:00"
         }
     ]
 }
@@ -1867,13 +1867,13 @@ GET请求：
             "notification_id": notification_id,
             "content": "公告内容",
             "sender_name": "senderName",
-            "timestamp": "2025-03-13T14:30:00Z"
+            "timestamp": "2025-03-13 14:30:00"
         },
         {
             "notification_id": notification_id,
             "content": "公告内容",
             "sender_name": "senderName",
-            "timestamp": "2025-03-13T14:30:00Z"
+            "timestamp": "2025-03-13 14:30:00"
         }
     ]
 }
@@ -2152,7 +2152,7 @@ GET请求：
             "receiver_id": receiverId,
             "receiver_name": "receiverName",
             "receiver_avatar": "avatar2",
-            "timestamp": "2025-03-13T14:30:00Z",
+            "timestamp": "2025-03-13 14:30:00",
             "status": 0
         },
         {
@@ -2164,7 +2164,7 @@ GET请求：
             "receiver_id": receiverId,
             "receiver_name": "receiverName",
             "receiver_avatar": "avatar2",
-            "timestamp": "2025-03-13T14:30:00Z",
+            "timestamp": "2025-03-13 14:30:00",
             "status": 1
         }
     ]

@@ -854,7 +854,7 @@ def conversation(req: HttpRequest):
             convs.append(new_return)
         sorted_convs = sorted(convs, key=lambda conv: (not conv['is_top'], -conv['last_message_time']))
         for conv in sorted_convs:
-            conv['last_message_time'] = "" if last_message_time == 0 else float2time(conv['last_message_time'])
+            conv['last_message_time'] = "" if conv['last_message_time'] == 0 else float2time(conv['last_message_time'])
         return request_success({"conversation": sorted_convs})
     elif req.method == "POST":
         body = json.loads(req.body.decode("utf-8"))
@@ -1745,6 +1745,8 @@ def sift_messages(req: HttpRequest): #筛选消息
     if "content" in body:
         content = require(body, "content", "string", err_msg="Missing or error type of [content]")
         queryset = queryset.filter(content__contains=content)    
+        
+    queryset = queryset.order_by('time')
 
     messages_serialize = [
         {
