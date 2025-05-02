@@ -40,7 +40,8 @@ class IMSConsumer(AsyncWebsocketConsumer):
     # 向指定用户组发送 notification
     async def notify(self, event) -> None:
         # logger.info(f"发送[notify]消息")
-        await self.send(text_data=json.dumps({'type': 'notify'}))
+        scroll = event.get("scroll")
+        await self.send(text_data=json.dumps({'type': 'notify', 'scroll': scroll}))
 
     async def request_message(self, event):# 好友请求
         # logger.info(f"发送[request_message]消息")

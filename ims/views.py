@@ -429,7 +429,7 @@ def friend_request_handle(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'false'})
 
         return request_success({"message": "已接受好友申请"})
 
@@ -889,7 +889,7 @@ def conversation(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'false'})
         return request_success({"message": "创建会话成功"})
 
 @CheckRequire
@@ -953,7 +953,10 @@ def message(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            if member == cur_user:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            else:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'false'})
 
         return request_success({"message": "成功发送"})
     
@@ -1032,9 +1035,6 @@ def delete_messages(req: HttpRequest):
             # print("last_id: ", last_id, "itf_last_id: ", itf.last_message_id)
             # input()
         itf.save()
-
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(str(cur_user.id), {'type': 'notify'})
     
     return request_success({"message": "删除聊天记录成功"})
 
@@ -1080,7 +1080,10 @@ def image(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            if member == cur_user:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            else:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'false'})
 
         return request_success({"message": "成功发送"})
 
@@ -1417,7 +1420,7 @@ def conv_member_add(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
@@ -1546,7 +1549,7 @@ def conv_handle_invitation(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
@@ -1630,7 +1633,7 @@ def conv_manage_notifications(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
