@@ -1198,7 +1198,7 @@ def conv_manage_admin(req: HttpRequest):
         conv.save()
         channel_layer = get_channel_layer()
         for member in conv.members.all():
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'modify_members', 'conversationId': str(conv.id)})
         return request_success({"message":"设置群组管理员成功"})
     elif req.method == "DELETE":
         if set_user not in conv.managers.all():
@@ -1207,7 +1207,7 @@ def conv_manage_admin(req: HttpRequest):
         conv.save()
         channel_layer = get_channel_layer()
         for member in conv.members.all():
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'modify_members', 'conversationId': str(conv.id)})
         return request_success({"message":"解除群组管理员成功"})
         
 @CheckRequire
@@ -1238,7 +1238,7 @@ def conv_manage_info(req: HttpRequest):
     conv.save()
     channel_layer = get_channel_layer()
     for member in conv.members.all():
-        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
     return request_success({"message":"修改群信息成功"})
     
 @CheckRequire
@@ -1276,7 +1276,7 @@ def conv_manage_ownership(req: HttpRequest):
     conv.save()
     channel_layer = get_channel_layer()
     for member in conv.members.all():
-        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'conv_setting'})
+        async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'modify_members', 'conversationId': str(conv.id)})
     return request_success({"message":"群主转让成功"})
 
 @CheckRequire
@@ -1301,6 +1301,9 @@ def conv_member_remove(req: HttpRequest):
         if cur_user not in conv.members.all():
             return request_failed(-1, "你不在群组中，无法退出", 400)
         if cur_user == conv.creator:
+            channel_layer = get_channel_layer()
+            for member in conv.members.all():
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'remove_members'})
             conv.delete()
             return request_success({"message":"群组解散成功"})
         conv.members.remove(cur_user)
@@ -1342,6 +1345,11 @@ def conv_member_remove(req: HttpRequest):
             if set_user in msg.read_by.all():
                 msg.read_by.remove(set_user)
             msg.save()
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(str(set_user_id), {'type': 'remove_members'})
+        for member in conv.members.all():
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'modify_members', 'conversationId': str(conv.id)})
         return request_success({"message":"移除群成员成功"})
     
 @CheckRequire
@@ -1410,6 +1418,20 @@ def conv_member_add(req: HttpRequest):
             itf.last_message_id = new_message.id
             itf.save()
             async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            async_to_sync(channel_layer.group_send)(
+                str(member.id),
+                {
+                    "type": "invitation_message",
+                    "conversationId": str(conv.id)
+                }
+            )
+            async_to_sync(channel_layer.group_send)(
+                str(member.id),
+                {
+                    "type": "modify_members",
+                    "conversationId": str(conv.id)
+                }
+            )
         
         return request_success({"message": "邀请成功"})
     else:
@@ -1419,7 +1441,8 @@ def conv_member_add(req: HttpRequest):
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
-                    "type": "invitation_message"
+                    "type": "invitation_message",
+                    "conversationId": str(conv.id)
                 }
             )
 
@@ -1524,12 +1547,34 @@ def conv_handle_invitation(req: HttpRequest):
             itf.last_message_id = new_message.id
             itf.save()
             async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
+            async_to_sync(channel_layer.group_send)(
+                str(member.id),
+                {
+                    "type": "invitation_message",
+                    "conversationId": str(conv.id)
+                }
+            )
+            async_to_sync(channel_layer.group_send)(
+                str(member.id),
+                {
+                    "type": "modify_members",
+                    "conversationId": str(conv.id)
+                }
+            )
         
         return request_success({"message": "同意该用户入群"})
 
     elif req.method == "DELETE":
         invitation.status = 1 # rejected
         invitation.save()
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            str(member.id),
+            {
+                "type": "invitation_message",
+                "conversationId": str(conv.id)
+            }
+        )
         return request_success({"message": "拒绝该用户入群"})
 
 @CheckRequire
@@ -1577,12 +1622,20 @@ def conv_manage_notifications(req: HttpRequest):
         notif = Notification(sender=cur_user, conversation=conv, content=content)
         notif.save()
 
+        new_message = Message(content=f"[群公告]\n\n{content}", type=0, sender=cur_user, conversation=conv)
+        new_message.save()
         channel_layer = get_channel_layer()
-        for member in conv.members.all():
+        for member in conv.members.all():# conv的所有member
+            itf = Interface.objects.filter(conv=conv, user=member).first()
+            itf.unreads += 1
+            itf.last_message_id = new_message.id
+            itf.save()
+            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify'})
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
                     "type": "notification_message",
+                    "conversationId": str(conv.id)
                 }
             )
         return request_success({"message": "发布群公告成功"})
@@ -1605,6 +1658,7 @@ def conv_manage_notifications(req: HttpRequest):
                 str(member.id),
                 {
                     "type": "notification_message",
+                    "conversationId": str(conv.id)
                 }
             )
         return request_success({"message": "删除群公告成功"})

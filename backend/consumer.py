@@ -63,19 +63,23 @@ class IMSConsumer(AsyncWebsocketConsumer):
         )
 
     async def invitation_message(self, event):# 进群邀请
+        conversation_id = event.get("conversationId")
         await self.send(
             text_data=json.dumps(
                 {
                     "type": "invitation_message",
+                    "conversationId": conversation_id
                 }
             )
         )
 
     async def notification_message(self, event): # 群聊通知
+        conversation_id = event.get("conversationId")
         await self.send(
             text_data=json.dumps(
                 {
                     "type": "notification_message",
+                    "conversationId": conversation_id
                 }
             )
         )
@@ -89,3 +93,22 @@ class IMSConsumer(AsyncWebsocketConsumer):
             )
         )
        
+    async def modify_members(self, event):
+        conversation_id = event.get("conversationId")
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "modify_members",
+                    "conversationId": conversation_id
+                }
+            )
+        )
+
+    async def remove_members(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "remove_members",
+                }
+            )
+        )
