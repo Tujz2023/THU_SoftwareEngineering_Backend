@@ -1322,7 +1322,9 @@ def conv_member_remove(req: HttpRequest):
             if cur_user in msg.read_by.all():
                 msg.read_by.remove(cur_user)
             msg.save()
-
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(str(cur_user.id), {'type': 'remove_members'})
+        
         return request_success({"message":"退出群组成功"})
     elif req.method == "DELETE":
         if conv.creator != cur_user and cur_user not in conv.managers.all():
@@ -1420,7 +1422,10 @@ def conv_member_add(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            if member == cur_user:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            else:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'false'})
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
@@ -1549,7 +1554,10 @@ def conv_handle_invitation(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            if member == cur_user:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            else:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'false'})
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
@@ -1633,7 +1641,10 @@ def conv_manage_notifications(req: HttpRequest):
             itf.unreads += 1
             itf.last_message_id = new_message.id
             itf.save()
-            async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            if member == cur_user:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'true'})
+            else:
+                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'notify', 'scroll': 'false'})
             async_to_sync(channel_layer.group_send)(
                 str(member.id),
                 {
