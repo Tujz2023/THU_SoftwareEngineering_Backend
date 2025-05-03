@@ -106,12 +106,12 @@ class IMSConsumer(AsyncWebsocketConsumer):
         )
 
     async def remove_members(self, event):
-        self = event.get("self")
+        temp_self = event.get("self")
         await self.send(
             text_data=json.dumps(
                 {
                     "type": "remove_members",
-                    "self": self
+                    "self": temp_self
                 }
             )
         )
