@@ -1306,7 +1306,10 @@ def conv_member_remove(req: HttpRequest):
         if cur_user == conv.creator:
             channel_layer = get_channel_layer()
             for member in conv.members.all():
-                async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'remove_members'})
+                if member == cur_user:
+                    async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'remove_members', 'self': 'true'})
+                else:
+                    async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'remove_members', 'self': 'false'})
             conv.delete()
             return request_success({"message":"群组解散成功"})
         conv.members.remove(cur_user)
@@ -1323,8 +1326,8 @@ def conv_member_remove(req: HttpRequest):
                 msg.read_by.remove(cur_user)
             msg.save()
         channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(str(cur_user.id), {'type': 'remove_members'})
-        
+        async_to_sync(channel_layer.group_send)(str(cur_user.id), {'type': 'remove_members', 'self': 'true'})
+
         return request_success({"message":"退出群组成功"})
     elif req.method == "DELETE":
         if conv.creator != cur_user and cur_user not in conv.managers.all():
@@ -1352,7 +1355,7 @@ def conv_member_remove(req: HttpRequest):
             msg.save()
         
         channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(str(set_user_id), {'type': 'remove_members'})
+        async_to_sync(channel_layer.group_send)(str(set_user_id), {'type': 'remove_members', 'self': 'false'})
         for member in conv.members.all():
             async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'modify_members', 'conversationId': str(conv.id)})
         return request_success({"message":"移除群成员成功"})
