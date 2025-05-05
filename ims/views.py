@@ -1593,13 +1593,14 @@ def conv_handle_invitation(req: HttpRequest):
         invitation.status = 1 # rejected
         invitation.save()
         channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            str(member.id),
-            {
-                "type": "invitation_message",
-                "conversationId": str(conv.id)
-            }
-        )
+        for member in conv.members.all():# conv的所有member
+            async_to_sync(channel_layer.group_send)(
+                str(member.id),
+                {
+                    "type": "invitation_message",
+                    "conversationId": str(conv.id)
+                }
+            )
         return request_success({"message": "拒绝该用户入群"})
 
 @CheckRequire
