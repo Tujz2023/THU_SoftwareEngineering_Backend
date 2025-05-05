@@ -981,6 +981,7 @@ def message(req: HttpRequest):
         itf.save()
 
         return_message = []
+        flag = False
         for msg in messages:
             ret = msg.serialize()
             if (msg.reply_to != None) and (not msg.reply_to.invisible_to.filter(id=cur_user.id).exists()):
@@ -988,13 +989,22 @@ def message(req: HttpRequest):
                 ret['reply_to_id'] = msg.reply_to.id
                 ret['reply_to_type'] = msg.reply_to.type
             if (msg.sender != cur_user) and (not msg.read_by.filter(id=cur_user.id).exists()):
+                flag = True
                 msg.read_by.add(cur_user)
             if conv.type == 0:
                 if msg.read_by.exclude(id=cur_user.id).exists():
+                    flag = True
                     ret['already_read'] = True
                 else:
                     ret['already_read'] = False
             return_message.append(ret)
+
+        if flag:
+            channel_layer = get_channel_layer()
+            for member in conv.members.all():# conv的所有member
+                if member != cur_user:
+                    async_to_sync(channel_layer.group_send)(str(member.id), {'type': 'already_read', 'conversationId': str(conv.id)})
+
         return request_success({"messages": return_message})
 
 @CheckRequire

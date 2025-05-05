@@ -115,3 +115,14 @@ class IMSConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
+
+    async def already_read(self, event):
+        conversation_id = event.get("conversationId")
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "already_read",
+                    "conversationId": conversation_id
+                }
+            )
+        )
