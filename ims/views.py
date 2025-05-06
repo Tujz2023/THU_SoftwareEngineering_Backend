@@ -720,7 +720,7 @@ def manage_friends(req: HttpRequest):
     if payload is None:
         return request_failed(-2, "Invalid or expired JWT", status_code=401)
 
-    if req.method not in ["GET", "PUT", "DELETE"]:
+    if req.method not in ["GET", "DELETE"]:
         return BAD_METHOD
 
     # 查看好友详情
