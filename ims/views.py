@@ -8,6 +8,7 @@ from ims.email import verification_email
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.utils import timezone
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 import random
 import datetime
@@ -36,6 +37,9 @@ from utils.utils_jwt import generate_jwt_token, check_jwt_token
 from utils.utils_crypto import encrypt_text, decrypt_text
 import re
 
+@ensure_csrf_cookie
+def get_csrf_token(req: HttpRequest):
+    return request_success({'message': 'csrf success'})
 
 @CheckRequire
 def login(req: HttpRequest):

@@ -2,6 +2,7 @@ from django.urls import path, include
 import ims.views as views
 
 urlpatterns = [
+    path('csrf', views.get_csrf_token),
     path('account/login', views.login),
     path('account/reg', views.register),
     path('account/delete', views.delete),
