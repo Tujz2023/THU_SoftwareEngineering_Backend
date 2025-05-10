@@ -32,6 +32,7 @@ else:
 ALLOWED_HOSTS = [
     # '*'  # Insecure
     'https://frontend-eyjhbgci.app.spring25b.secoder.net/',
+    'http://localhost:3000/'
 ]
 
 
