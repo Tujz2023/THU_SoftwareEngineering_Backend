@@ -30,7 +30,8 @@ else:
     DEBUG = False
 
 ALLOWED_HOSTS = [
-    '*'  # Insecure
+    # '*'  # Insecure
+    'https://frontend-eyjhbgci.app.spring25b.secoder.net/',
 ]
 
 
