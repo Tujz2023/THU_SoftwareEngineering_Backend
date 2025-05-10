@@ -30,9 +30,9 @@ else:
     DEBUG = False
 
 ALLOWED_HOSTS = [
-    '*'  # Insecure
-    # 'https://frontend-eyjhbgci.app.spring25b.secoder.net/',
-    # 'http://localhost:3000/'
+    # '*'  # Insecure
+    'frontend-eyjhbgci.app.spring25b.secoder.net',
+    'localhost:3000'
 ]
 
 
